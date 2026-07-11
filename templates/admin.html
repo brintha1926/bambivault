@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BambiVault — Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .admin-topbar {
+      display:flex; justify-content:space-between; align-items:center;
+      margin-bottom: 1rem; flex-wrap:wrap; gap:12px;
+    }
+    .topbar-actions { display:flex; align-items:center; gap:8px; }
+
+    .btn-sm {
+      padding: .5rem 1rem; border-radius: 8px; font-size: .78rem; font-weight: 600;
+      border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.03);
+      color: #fff; cursor: pointer; text-decoration: none; display: inline-block;
+    }
+    .btn-sm:hover { border-color: #00ffc8; color: #00ffc8; }
+    .btn-sm.active { border-color:#00ffc8; color:#00ffc8; background:rgba(0,255,200,.08); }
+    .btn-export { background: #00ffc8; color: #000; border: none; }
+    .btn-logout { border-color: rgba(239,68,68,.3); color: #f3a5a5; }
+    .btn-logout:hover { border-color:#ef4444; color:#ef4444; }
+
+    .trend-row { display:flex; align-items:flex-end; gap: 6px; height: 120px; padding: 10px 0; overflow-x:auto; }
+    .trend-bar { flex:1; min-width:8px; background: linear-gradient(180deg,#ef444488,#ef4444); border-radius: 3px 3px 0 0; position: relative; min-height: 2px; }
+    .trend-day { font-size: .58rem; color: var(--muted,#888); text-align:center; margin-top: 4px; }
+
+    /* Toolbar — enterprise dashboard style: segmented presets left, dates right, no Apply button */
+    .filter-bar {
+      display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap;
+      background: rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.08);
+      border-radius:10px; padding:8px 12px; margin-bottom:1.2rem;
+    }
+    .segmented {
+      display:flex; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);
+      border-radius:8px; padding:3px; gap:2px;
+    }
+    .segmented button {
+      padding:.42rem .85rem; border-radius:6px; font-size:.74rem; font-weight:600;
+      border:none; background:transparent; color:var(--muted,#888); cursor:pointer;
+    }
+    .segmented button.active { background:#00ffc8; color:#000; }
+    .segmented button:hover:not(.active) { color:#fff; }
+
+    .date-group { display:flex; align-items:center; gap:6px; }
+    .date-group input[type=date] {
+      background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.15);
+      border-radius:6px; padding:.4rem .55rem; color:#fff; font-size:.76rem;
+    }
+    .date-sep { color:var(--muted,#888); font-size:.75rem; }
+
+    .export-wrap { position: relative; display:inline-block; }
+    .btn-export-main { display:flex; align-items:center; gap:6px; }
+    .export-menu {
+      display:none; position:absolute; top:calc(100% + 6px); right:0;
+      background:#12121c; border:1px solid rgba(255,255,255,.12);
+      border-radius:8px; min-width:170px; overflow:hidden; z-index:20;
+      box-shadow:0 8px 24px rgba(0,0,0,.4);
+    }
+    .export-menu.open { display:block; }
+    .export-menu button {
+      display:block; width:100%; text-align:left; padding:.6rem .9rem;
+      background:none; border:none; color:#fff; font-size:.78rem;
+      cursor:pointer; font-family:inherit;
+    }
+    .export-menu button:hover { background:rgba(0,255,200,.1); color:#00ffc8; }
+    .export-menu button + button { border-top:1px solid rgba(255,255,255,.06); }
+
+    .compare-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:8px 0; }
+    .compare-card { background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:14px; text-align:center; }
+    .compare-label { font-size:.65rem; color:var(--muted,#888); font-weight:700; letter-spacing:.08em; margin-bottom:4px; }
+    .compare-val { font-size:1.4rem; font-weight:700; font-family:var(--mono,monospace); }
+    .compare-delta { font-size:.72rem; margin-top:4px; }
+    .compare-sub { color:var(--muted,#888); font-weight:400; font-size:.72rem; }
+  </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<nav class="navbar">
+  <div class="nav-brand"><span class="brand-name">Bambi<span class="brand-acc">Vault</span></span></div>
+  <div class="nav-links">
+    <a href="/"><span class="ni">◈</span>Analyser</a>
+    <a href="/dashboard"><span class="ni">◉</span>Trends</a>
+    <a href="/database"><span class="ni">◫</span>Database</a>
+    <a href="/admin" class="active"><span class="ni">⚙</span>Admin</a>
+  </div>
+  <div class="nav-status"><span class="sdot"></span>Admin Session</div>
+</nav>
+
+<main class="container">
+  <div class="admin-topbar">
+    <div>
+      <h2>Administrator Dashboard</h2>
+      <p class="hero-sub">Institutional statistics</p>
+    </div>
+    <div class="topbar-actions">
+      <div class="export-wrap">
+        <button class="btn-sm btn-export btn-export-main" onclick="toggleExportMenu(event)">EXPORT ▾</button>
+        <div class="export-menu" id="exportMenu">
+          <button onclick="exportAs('csv')">CSV</button>
+          <button onclick="exportAs('pdf')">PDF</button>
+          <button onclick="exportAs('docx')">DOCX</button>
+          <button onclick="exportAs('txt')">TXT</button>
+        </div>
+      </div>
+      <a href="/admin/logout" class="btn-sm btn-logout">LOG OUT</a>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="segmented" id="presetGroup">
+      <button onclick="setPreset('today')" data-preset="today">Today</button>
+      <button onclick="setPreset('week')" data-preset="week">This week</button>
+      <button onclick="setPreset('month')" data-preset="month">This month</button>
+      <button class="active" onclick="setPreset('all')" data-preset="all">All time</button>
+    </div>
+    <div class="date-group">
+      <input type="date" id="rangeStart" onchange="onDateChange()">
+      <span class="date-sep">→</span>
+      <input type="date" id="rangeEnd" onchange="onDateChange()">
+    </div>
+  </div>
+
+  <div class="dstat-row">
+    <div class="dstat"><div class="dstat-label">TOTAL ANALYSES</div><div class="dstat-val" id="sTotal">—</div></div>
+    <div class="dstat"><div class="dstat-label">BREACHES FOUND</div><div class="dstat-val danger" id="sBreach">—</div><div class="dstat-delta" id="sRate">— breach rate</div></div>
+    <div class="dstat"><div class="dstat-label">AVG ENTROPY</div><div class="dstat-val" id="sEntropy">—</div></div>
+    <div class="dstat"><div class="dstat-label">STRONG PASSWORDS</div><div class="dstat-val success" id="sStrong">—</div></div>
+  </div>
+
+  <div class="dchart-row">
+    <div class="panel"><div class="ptag">STRENGTH DISTRIBUTION</div><div id="distChart"></div></div>
+    <div class="panel"><div class="ptag">BREACH RISK LEVELS</div><div id="riskChart"></div></div>
+  </div>
+
+  <div class="dchart-row">
+    <div class="panel"><div class="ptag">BEHAVIOURAL PROFILE DISTRIBUTION</div><div id="profileChart"></div></div>
+    <div class="panel"><div class="ptag">BREACH TREND<span id="trendRangeLabel"></span></div><div id="trendChart"></div></div>
+  </div>
+
+  <div class="panel" style="margin-top:20px">
+    <div class="ptag">PERIOD COMPARISON</div>
+    <div id="compareRangeLabel" style="font-size:.72rem;color:var(--muted,#888);margin:2px 0 8px"></div>
+    <div id="compareChart"></div>
+  </div>
+</main>
+
+<script>
+const SORDER=['Very Weak','Weak','Medium','Strong','Very Strong'];
+const SCOLORS=['#ef4444','#f97316','#f59e0b','#10b981','#00ffc8'];
+const RCOLORS={'Safe':'#10b981','Low Risk':'#f59e0b','Moderate Risk':'#f97316','High Risk':'#ef4444','Critical':'#a855f7'};
+const PCOLORS={'Keyboard-Walk Type':'#ef4444','Name+Year Type':'#f97316','Substitution Type':'#f59e0b','Dictionary-Word Type':'#a855f7','Clean':'#10b981'};
+
+function fmtISO(d){ return d.toISOString().split('T')[0]; }
+
+// Nice short display date, e.g. "11 Jul" or "11 Jul 2026" if not current year
+function niceDate(iso){
+  if(!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  const opts = { day:'numeric', month:'short' };
+  if(d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+  return d.toLocaleDateString('en-GB', opts);
+}
+
+// Collapses a start/end pair into one clean label — avoids "X → X" duplication
+function rangeLabel(start, end){
+  if(!start && !end) return 'All time';
+  if(start === end) return niceDate(start);
+  return `${niceDate(start)} – ${niceDate(end)}`;
+}
+
+function clearPresetActive(){
+  document.querySelectorAll('#presetGroup button').forEach(b=>b.classList.remove('active'));
+}
+
+function setPreset(name){
+  clearPresetActive();
+  document.querySelector(`[data-preset="${name}"]`).classList.add('active');
+
+  const today = new Date();
+  let start = null, end = null;
+
+  if(name==='today'){ start = new Date(today); end = new Date(today); }
+  else if(name==='week'){ start = new Date(today); start.setDate(today.getDate()-6); end = new Date(today); }
+  else if(name==='month'){ start = new Date(today.getFullYear(), today.getMonth(), 1); end = new Date(today); }
+  else {
+    document.getElementById('rangeStart').value='';
+    document.getElementById('rangeEnd').value='';
+    load();
+    return;
+  }
+
+  document.getElementById('rangeStart').value = fmtISO(start);
+  document.getElementById('rangeEnd').value = fmtISO(end);
+  load();
+}
+
+// Manually picking a date deselects the presets and — once BOTH dates are
+// set — immediately reloads, no separate Apply button needed.
+function onDateChange(){
+  clearPresetActive();
+  const s = document.getElementById('rangeStart').value;
+  const e = document.getElementById('rangeEnd').value;
+  if(s && e) load();
+}
+
+function currentRange(){
+  const s = document.getElementById('rangeStart').value;
+  const e = document.getElementById('rangeEnd').value;
+  let qs = '';
+  if(s) qs += `start=${s}`;
+  if(e) qs += (qs?'&':'') + `end=${e}`;
+  return qs;
+}
+
+function toggleExportMenu(e){
+  e.stopPropagation();
+  document.getElementById('exportMenu').classList.toggle('open');
+}
+document.addEventListener('click', ()=>{
+  document.getElementById('exportMenu').classList.remove('open');
+});
+function exportAs(fmt){
+  const qs = currentRange();
+  window.location = `/api/admin/export?format=${fmt}` + (qs ? '&'+qs : '');
+  document.getElementById('exportMenu').classList.remove('open');
+}
+
+async function load(){
+  try{
+    const qs = currentRange();
+    const r=await fetch('/api/admin/stats' + (qs ? '?'+qs : ''));
+    if(r.status===302||r.redirected){ window.location='/admin/login'; return; }
+    const d=await r.json();
+
+    document.getElementById('sTotal').textContent=d.total||0;
+    document.getElementById('sBreach').textContent=d.breached||0;
+    document.getElementById('sRate').textContent=(d.breach_rate||0)+'% breach rate';
+    document.getElementById('sEntropy').textContent=(d.avg_entropy||0)+' bits';
+
+    const dm={}; d.distribution.forEach(x=>dm[x.label]=x.count);
+    const strong=(dm['Strong']||0)+(dm['Very Strong']||0);
+    document.getElementById('sStrong').textContent = d.total?Math.round((strong/d.total)*100)+'%':'0%';
+
+    document.getElementById('distChart').innerHTML = SORDER.map((lbl,i)=>{
+      const cnt=dm[lbl]||0, pct=d.total?Math.round((cnt/d.total)*100):0;
+      return`<div class="brow"><span class="blbl">${lbl}</span>
+        <div class="btrack"><div class="bfill" style="width:${pct||2}%;background:${SCOLORS[i]}">
+        <span class="bpct">${pct}%</span></div></div><span class="bcnt">${cnt}</span></div>`;
+    }).join('');
+
+    const rdm={}; (d.risk_dist||[]).forEach(x=>rdm[x.label]=x.count);
+    const rkeys=['Safe','Low Risk','Moderate Risk','High Risk','Critical'];
+    document.getElementById('riskChart').innerHTML = rkeys.map(lbl=>{
+      const cnt=rdm[lbl]||0, pct=d.total?Math.round((cnt/d.total)*100):0, c=RCOLORS[lbl];
+      return`<div class="brow"><span class="blbl" style="font-size:.68rem">${lbl}</span>
+        <div class="btrack"><div class="bfill" style="width:${pct||2}%;background:${c}">
+        <span class="bpct">${pct}%</span></div></div><span class="bcnt">${cnt}</span></div>`;
+    }).join('');
+
+    const pkeys=['Keyboard-Walk Type','Name+Year Type','Substitution Type','Dictionary-Word Type','Clean'];
+    const pdm={}; (d.profile_dist||[]).forEach(x=>pdm[x.label]=x.count);
+    document.getElementById('profileChart').innerHTML = pkeys.map(lbl=>{
+      const cnt=pdm[lbl]||0, pct=d.total?Math.round((cnt/d.total)*100):0, c=PCOLORS[lbl];
+      return`<div class="brow"><span class="blbl" style="font-size:.66rem">${lbl}</span>
+        <div class="btrack"><div class="bfill" style="width:${pct||2}%;background:${c}">
+        <span class="bpct">${pct}%</span></div></div><span class="bcnt">${cnt}</span></div>`;
+    }).join('');
+
+    const trend = d.breach_trend || [];
+    const maxVal = Math.max(1, ...trend.map(t=>t.breached));
+    document.getElementById('trendChart').innerHTML = trend.length
+      ? `<div class="trend-row">${trend.map(t=>{
+          const h = Math.max(4, Math.round((t.breached/maxVal)*100));
+          const day = t.day ? t.day.slice(5) : '';
+          return `<div style="flex:1;text-align:center">
+            <div class="trend-bar" style="height:${h}px" title="${t.breached} breached / ${t.total} total"></div>
+            <div class="trend-day">${day}</div></div>`;
+        }).join('')}</div>`
+      : '<p style="color:var(--muted);font-size:.8rem;padding:1rem 0">No data in this range yet.</p>';
+
+    const rl = d.range_applied || {};
+    document.getElementById('trendRangeLabel').textContent =
+      (rl.start || rl.end) ? ` (${rangeLabel(rl.start, rl.end)})` : '';
+
+    await loadComparison();
+  }catch(e){console.error(e);}
+}
+
+async function loadComparison(){
+  try{
+    const qs = currentRange();
+    const r = await fetch('/api/admin/compare' + (qs ? '?'+qs : ''));
+    const d = await r.json();
+
+    const curLbl  = rangeLabel(d.current_range.start, d.current_range.end);
+    const prevLbl = rangeLabel(d.previous_range.start, d.previous_range.end);
+    document.getElementById('compareRangeLabel').textContent = `${curLbl}  vs  ${prevLbl}`;
+
+    const metrics = [
+      { key:'total', label:'Total Analyses' },
+      { key:'breached', label:'Breaches Found' },
+      { key:'breach_rate', label:'Breach Rate', fmt:v=>v+'%' },
+      { key:'avg_entropy', label:'Avg Entropy', fmt:v=>v+' bits' }
+    ];
+
+    document.getElementById('compareChart').innerHTML = `<div class="compare-grid">${
+      metrics.map(m=>{
+        const cur = d.current[m.key] || 0;
+        const prev = d.previous[m.key] || 0;
+        const diff = cur - prev;
+        const pct = prev !== 0 ? (diff/prev*100) : (cur>0 ? 100 : 0);
+        const isUp = diff > 0;
+        const isGood = (m.key==='breached'||m.key==='breach_rate') ? !isUp : isUp;
+        const arrow = diff===0 ? '→' : (isUp ? '↑' : '↓');
+        const color = diff===0 ? 'var(--muted,#888)' : (isGood ? '#10b981' : '#ef4444');
+        return `<div class="compare-card">
+          <div class="compare-label">${m.label}</div>
+          <div class="compare-val">${m.fmt?m.fmt(cur):cur}</div>
+          <div class="compare-delta" style="color:${color}">
+            ${arrow} ${Math.abs(pct).toFixed(1)}%
+            <div class="compare-sub">prev: ${m.fmt?m.fmt(prev):prev}</div>
+          </div>
+        </div>`;
+      }).join('')
+    }</div>`;
+  }catch(e){
+    console.error('Comparison load error:', e);
+    document.getElementById('compareChart').innerHTML =
+      '<p style="color:var(--muted);font-size:.8rem;padding:1rem 0">Comparison unavailable.</p>';
+  }
+}
+
+load();
+setInterval(load,15000);
+</script>
+</body>
+</html>

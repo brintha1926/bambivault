@@ -1,0 +1,16 @@
+venv/
+__pycache__/
+*.pyc
+.env
+instance/
+logs/
+.DS_Store
+Thumbs.db
+data/rockyou.txt
+data/rockyou_clean.txt
+data/password_frequency.csv
+data/training_data.csv
+data/training_data_v2.csv
+data/training_data_v3.csv
+data/breach_cache.db
+model/*.pkl

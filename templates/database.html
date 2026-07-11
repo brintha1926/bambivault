@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BambiVault — Database Records</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .badge-profile {
+      display:inline-block; padding:.2rem .55rem; border-radius:20px;
+      font-size:.66rem; font-weight:600; white-space:nowrap;
+    }
+  </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="brand-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L4 6v6c0 5.25 3.5 10.14 8 11.35C16.5 22.14 20 17.25 20 12V6L12 2z" fill="#00ffc8" opacity=".25" stroke="#00ffc8" stroke-width="1.5"/>
+        <path d="M9 12l2 2 4-4" stroke="#00ffc8" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="brand-name">Bambi<span class="brand-acc">Vault</span></span>
+  </div>
+  <div class="nav-links">
+    <a href="/"><span class="ni">◈</span>Analyser</a>
+    <a href="/dashboard"><span class="ni">◉</span>Dashboard</a>
+    <a href="/database" class="active"><span class="ni">◫</span>Database</a>
+  </div>
+  <div class="nav-status"><span class="sdot"></span>System Online</div>
+</nav>
+
+<main class="container">
+  <div class="db-hdr">
+    <div>
+      <h2 style="font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:.3rem">
+        Password Analysis Log
+      </h2>
+      <p class="hero-sub">Anonymised records · No plaintext passwords stored · k-Anonymity protected</p>
+    </div>
+    <span class="db-badge">● Live Database</span>
+  </div>
+
+  <div class="toolbar">
+    <select id="strF" class="db-sel" onchange="load(1)">
+      <option value="">All strengths</option>
+      <option>Very Weak</option><option>Weak</option>
+      <option>Medium</option><option>Strong</option><option>Very Strong</option>
+    </select>
+    <select id="brF" class="db-sel" onchange="load(1)">
+      <option value="">All breach status</option>
+      <option value="yes">Breached only</option>
+      <option value="no">Not breached</option>
+    </select>
+    <select id="profF" class="db-sel" onchange="load(1)">
+      <option value="">All behaviour profiles</option>
+      <option value="Keyboard-Walk Type">Keyboard-Walk Type</option>
+      <option value="Name+Year Type">Name+Year Type</option>
+      <option value="Substitution Type">Substitution Type</option>
+      <option value="Dictionary-Word Type">Dictionary-Word Type</option>
+      <option value="Clean">Clean</option>
+    </select>
+    <div class="db-tot" id="dbTot">0 records</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Hash Prefix</th>
+          <th>Strength</th>
+          <th>Behaviour Profile</th>
+          <th>Breach Risk</th>
+          <th>Pattern Flags</th>
+          <th>Entropy</th>
+          <th>Breached</th>
+          <th>Submitted At</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="pagination" id="pages"></div>
+  </div>
+</main>
+
+<script>
+const SBADGE={
+  'Very Weak':'bvw','Weak':'bw','Medium':'bm',
+  'Strong':'bs','Very Strong':'bvs'
+};
+const RBADGE={
+  'Safe':'r-safe','Low Risk':'r-low','Moderate Risk':'r-mod',
+  'High Risk':'r-high','Critical':'r-crit','Unknown':'r-low'
+};
+const PCOLORS={
+  'Keyboard-Walk Type':'#ef4444','Name+Year Type':'#f97316',
+  'Substitution Type':'#f59e0b','Dictionary-Word Type':'#a855f7','Clean':'#10b981'
+};
+
+async function load(pg=1){
+  const sf=document.getElementById('strF').value;
+  const bf=document.getElementById('brF').value;
+  const pf=document.getElementById('profF').value;
+  let url=`/api/records?page=${pg}`;
+  if(sf)url+=`&strength=${encodeURIComponent(sf)}`;
+  if(bf)url+=`&breach=${bf}`;
+  if(pf)url+=`&profile=${encodeURIComponent(pf)}`;
+  const r=await fetch(url);
+  const d=await r.json();
+
+  document.getElementById('dbTot').textContent=d.total+' records';
+
+  document.getElementById('tbody').innerHTML=
+    d.records.map(r=>{
+      const prof = r.behaviour_profile || 'Clean';
+      const pc = PCOLORS[prof] || '#888';
+      return `
+      <tr>
+        <td class="mono dim sm">#${String(r.id).padStart(4,'0')}</td>
+        <td class="mono dim sm">${r.hash_prefix}<span style="opacity:.35">*****</span></td>
+        <td><span class="badge ${SBADGE[r.strength_label]||'bm'}">${r.strength_label}</span></td>
+        <td><span class="badge-profile" style="background:${pc}22;color:${pc};border:1px solid ${pc}44">${prof}</span></td>
+        <td><span class="badge ${RBADGE[r.breach_risk]||'r-low'}">${r.breach_risk}</span></td>
+        <td class="dim sm">${r.pattern_flags}</td>
+        <td class="mono sm">${r.entropy}</td>
+        <td style="text-align:center;font-size:1rem">
+          ${r.breach_exposed
+            ?'<span style="color:#ef4444">✕</span>'
+            :'<span style="color:#10b981">✓</span>'}
+        </td>
+        <td class="mono dim sm">${r.submitted_at}</td>
+      </tr>`;
+    }).join('')||`<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2.5rem;font-size:.85rem">No records match this filter.</td></tr>`;
+
+  const pg2=document.getElementById('pages');
+  pg2.innerHTML='';
+  for(let i=1;i<=d.pages;i++){
+    const b=document.createElement('button');
+    b.className='pgb'+(i===pg?' cur':'');
+    b.textContent=i;
+    b.onclick=()=>load(i);
+    pg2.appendChild(b);
+  }
+}
+load();
+setInterval(()=>load(1),8000);
+</script>
+</body>
+</html>

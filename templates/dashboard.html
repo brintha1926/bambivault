@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BambiVault — Analysis &amp; Trends</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .edu-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:1.5rem; }
+    .edu-card {
+      background: rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.08);
+      border-radius: 12px; padding: 1.3rem; position:relative; overflow:hidden;
+    }
+    .edu-icon { font-size:1.4rem; margin-bottom:.6rem; }
+    .edu-title { font-family:var(--mono); font-size:.92rem; font-weight:700; margin-bottom:.5rem; }
+    .edu-body { font-size:.8rem; color:var(--muted,#888); line-height:1.55; }
+    .edu-accent { position:absolute; top:0; left:0; width:100%; height:3px; }
+    @media (max-width: 900px){ .edu-grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="brand-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L4 6v6c0 5.25 3.5 10.14 8 11.35C16.5 22.14 20 17.25 20 12V6L12 2z" fill="#00ffc8" opacity=".25" stroke="#00ffc8" stroke-width="1.5"/>
+        <path d="M9 12l2 2 4-4" stroke="#00ffc8" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="brand-name">Bambi<span class="brand-acc">Vault</span></span>
+  </div>
+  <div class="nav-links">
+    <a href="/"><span class="ni">◈</span>Analyser</a>
+    <a href="/dashboard" class="active"><span class="ni">◉</span>Trends</a>
+    <a href="/database"><span class="ni">◫</span>Database</a>
+  </div>
+  <div class="nav-status"><span class="sdot"></span>System Online</div>
+</nav>
+
+<main class="container">
+  <div class="dash-hdr">
+    <div>
+      <h2>Analysis &amp; Trends</h2>
+      <p class="hero-sub">Aggregated anonymous data from real submissions · No passwords stored · Public awareness view</p>
+    </div>
+  </div>
+
+  <div class="dstat-row">
+    <div class="dstat">
+      <div class="dstat-label">PASSWORDS ANALYSED</div>
+      <div class="dstat-val" id="sTotal">—</div>
+      <div class="dstat-delta">All time submissions</div>
+    </div>
+    <div class="dstat">
+      <div class="dstat-label">FOUND IN BREACHES</div>
+      <div class="dstat-val danger" id="sRate">—</div>
+      <div class="dstat-delta">of all analysed passwords</div>
+    </div>
+    <div class="dstat">
+      <div class="dstat-label">AVG ENTROPY</div>
+      <div class="dstat-val" id="sEntropy">—</div>
+      <div class="dstat-delta">Shannon bits average</div>
+    </div>
+    <div class="dstat">
+      <div class="dstat-label">STRONG PASSWORDS</div>
+      <div class="dstat-val success" id="sStrong">—</div>
+      <div class="dstat-delta">Strong + Very Strong</div>
+    </div>
+  </div>
+
+  <div class="dchart-row">
+    <div class="panel">
+      <div class="ptag">STRENGTH DISTRIBUTION</div>
+      <div id="distChart"></div>
+    </div>
+    <div class="panel">
+      <div class="ptag">TOP WEAKNESS PATTERNS</div>
+      <div id="patChart"></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:20px">
+    <div class="ptag">STAY SECURE — WHAT TO WATCH FOR</div>
+    <div class="edu-grid">
+      <div class="edu-card">
+        <div class="edu-accent" style="background:#ef4444"></div>
+        <div class="edu-icon">🎣</div>
+        <div class="edu-title">Phishing</div>
+        <div class="edu-body">
+          Attackers send fake emails or messages mimicking a trusted source —
+          your bank, university, or a colleague — to trick you into revealing
+          your password directly. No breach database can catch this; the only
+          defence is checking sender addresses carefully and never entering
+          credentials through a link you didn't navigate to yourself.
+        </div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-accent" style="background:#f59e0b"></div>
+        <div class="edu-icon">🔁</div>
+        <div class="edu-title">Credential Stuffing</div>
+        <div class="edu-body">
+          When one site is breached, attackers automatically try the same
+          email+password combination across thousands of other sites. Reusing
+          a password — even a strong one — means a single breach elsewhere can
+          compromise every account where you reused it.
+        </div>
+      </div>
+      <div class="edu-card">
+        <div class="edu-accent" style="background:#10b981"></div>
+        <div class="edu-icon">🔐</div>
+        <div class="edu-title">Password Managers</div>
+        <div class="edu-body">
+          A password manager generates and stores a unique, high-entropy
+          password for every account, so you only need to remember one master
+          password. This removes the two biggest human risk factors this
+          dashboard measures: reuse and predictable patterns.
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+async function load(){
+  try{
+    const r=await fetch('/api/stats');
+    const d=await r.json();
+
+    document.getElementById('sTotal').textContent=d.total||0;
+    document.getElementById('sRate').textContent=(d.breach_rate||0)+'%';
+    document.getElementById('sEntropy').textContent=(d.avg_entropy||0)+' bits';
+
+    const dm={}; d.distribution.forEach(x=>dm[x.label]=x.count);
+    const strong=(dm['Strong']||0)+(dm['Very Strong']||0);
+    document.getElementById('sStrong').textContent=
+      d.total?Math.round((strong/d.total)*100)+'%':'0%';
+
+    const SORDER=['Very Weak','Weak','Medium','Strong','Very Strong'];
+    const SCOLORS=['#ef4444','#f97316','#f59e0b','#10b981','#00ffc8'];
+    document.getElementById('distChart').innerHTML=
+      SORDER.map((lbl,i)=>{
+        const cnt=dm[lbl]||0;
+        const pct=d.total?Math.round((cnt/d.total)*100):0;
+        return`<div class="brow">
+          <span class="blbl">${lbl}</span>
+          <div class="btrack">
+            <div class="bfill" style="width:${pct||2}%;background:${SCOLORS[i]}">
+              <span class="bpct">${pct}%</span>
+            </div>
+          </div>
+          <span class="bcnt">${cnt}</span>
+        </div>`;
+      }).join('');
+
+    document.getElementById('patChart').innerHTML=
+      (d.top_patterns.length?d.top_patterns:[['No data yet',0]])
+      .map(([n,c])=>`
+        <div class="pat-item">
+          <span class="pat-name">${n.replace(/_/g,' ')}</span>
+          <span class="pat-cnt">${c}</span>
+        </div>`).join('');
+
+  }catch(e){console.error(e);}
+}
+load();
+setInterval(load,15000);
+</script>
+</body>
+</html>

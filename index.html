@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BambiVault — Password Security Analyser</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="brand-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L4 6v6c0 5.25 3.5 10.14 8 11.35C16.5 22.14 20 17.25 20 12V6L12 2z" fill="#00ffc8" opacity=".25" stroke="#00ffc8" stroke-width="1.5"/>
+        <path d="M9 12l2 2 4-4" stroke="#00ffc8" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="brand-name">Bambi<span class="brand-acc">Vault</span></span>
+  </div>
+  <div class="nav-links">
+    <a href="/" class="active"><span class="ni">◈</span>Analyser</a>
+    <a href="/dashboard"><span class="ni">◉</span>Dashboard</a>
+    <a href="/database"><span class="ni">◫</span>Database</a>
+  </div>
+  <div class="nav-status"><span class="sdot"></span>System Online</div>
+</nav>
+
+<main class="container">
+  <div class="hero">
+    <div class="hero-eyebrow">
+      <span class="etag">ML-POWERED</span>
+      <span class="eline"></span>
+      <span class="etag">BREACH INTELLIGENCE</span>
+    </div>
+    <h1 class="hero-title">Analyse Your<br><span class="tacc">Password Security</span></h1>
+    <p class="hero-sub">Machine learning pattern detection &nbsp;·&nbsp; Custom 5-tier breach risk engine &nbsp;·&nbsp; Behavioural feedback</p>
+  </div>
+
+  <div class="input-section">
+    <div class="input-glow"></div>
+    <div class="input-card">
+      <div class="input-hdr">
+        <span class="ilabel">PASSWORD INPUT</span>
+        <span class="icount" id="charCount">0 characters</span>
+      </div>
+      <div class="input-row">
+        <div class="pw-wrap">
+          <span class="pw-ico">🔒</span>
+          <input type="password" id="pwInput" class="pw-field"
+                 placeholder="Enter password to analyse..."
+                 oninput="liveCheck(this.value)">
+          <button class="tv-btn" onclick="toggleVis()" id="tvBtn">SHOW</button>
+        </div>
+        <button class="btn-analyse" id="analyseBtn" onclick="analysePassword()">
+          <span id="btnTxt">ANALYSE</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div id="liveMeter" class="live-meter hidden">
+        <div class="mtrack"><div class="mfill" id="mFill"></div></div>
+        <div class="minfo">
+          <span class="mlabel" id="mLabel">—</span>
+          <span class="mcrack" id="mCrack">—</span>
+        </div>
+        <div class="segrow">
+          <div class="seg" id="s0"></div><div class="seg" id="s1"></div>
+          <div class="seg" id="s2"></div><div class="seg" id="s3"></div>
+          <div class="seg" id="s4"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultsArea" class="results-area hidden">
+
+    <div class="stat-strip">
+      <div class="ss-item">
+        <div class="ss-label">CLASSIFICATION</div>
+        <div class="ss-val" id="rClass">—</div>
+      </div>
+      <div class="ss-div"></div>
+      <div class="ss-item">
+        <div class="ss-label">ENTROPY (BITS)</div>
+        <div class="ss-val mono" id="rEntropy">—</div>
+      </div>
+      <div class="ss-div"></div>
+      <div class="ss-item">
+        <div class="ss-label">BREACH RISK</div>
+        <div class="ss-val" id="rRisk">—</div>
+      </div>
+      <div class="ss-div"></div>
+      <div class="ss-item">
+        <div class="ss-label">KNOWN EXPOSURES</div>
+        <div class="ss-val mono" id="rExp">—</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="col-l">
+        <div class="panel">
+          <div class="ptag">FEATURE ANALYSIS</div>
+          <div id="featList"></div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <div class="ptag">DETECTED PATTERNS</div>
+          <div class="flag-wrap" id="flagWrap"></div>
+        </div>
+      </div>
+      <div class="col-r">
+        <div class="breach-card" id="breachCard">
+          <div class="bc-top">
+            <div class="borb" id="borb"></div>
+            <div>
+              <div class="bverdict" id="bVerdict">—</div>
+              <div class="bsub" id="bSub">—</div>
+            </div>
+          </div>
+          <div class="risk-section">
+            <div class="rs-label">RISK CLASSIFICATION</div>
+            <div class="tier-row" id="tierRow">
+              <div class="tier" data-i="0">SAFE</div>
+              <div class="tier" data-i="1">LOW</div>
+              <div class="tier" data-i="2">MOD</div>
+              <div class="tier" data-i="3">HIGH</div>
+              <div class="tier" data-i="4">CRIT</div>
+            </div>
+            <div class="rbar"><div class="rbar-fill" id="rBarFill"></div></div>
+            <div class="rscore" id="rScore">Risk Score: — / 100</div>
+          </div>
+          <div class="intel-box" id="intelBox">
+            <div class="intel-hdr"><span class="idot"></span>BREACH INTELLIGENCE</div>
+            <p class="intel-txt" id="intelTxt">—</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel recs-panel">
+      <div class="prec-hdr">
+        <span class="ptag">SECURITY RECOMMENDATIONS</span>
+        <span class="reccount" id="recCount"></span>
+      </div>
+      <div class="rec-grid" id="recGrid"></div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const SC=['#ef4444','#f97316','#f59e0b','#10b981','#00ffc8'];
+const SL=['Very Weak','Weak','Medium','Strong','Very Strong'];
+const SW=[12,30,52,74,100];
+const CR=['< 1 second','A few seconds','Minutes–hours','Hours–days','Years+'];
+const RM={'Safe':0,'Low Risk':1,'Moderate Risk':2,'High Risk':3,'Critical':4};
+const RC={'Safe':'#10b981','Low Risk':'#f59e0b','Moderate Risk':'#f97316','High Risk':'#ef4444','Critical':'#a855f7'};
+
+function toggleVis(){
+  const f=document.getElementById('pwInput'),b=document.getElementById('tvBtn');
+  f.type=f.type==='password'?'text':'password';
+  b.textContent=f.type==='password'?'SHOW':'HIDE';
+}
+
+function liveCheck(pw){
+  document.getElementById('charCount').textContent=pw.length+' characters';
+  const m=document.getElementById('liveMeter');
+  if(!pw){m.classList.add('hidden');return;}
+  m.classList.remove('hidden');
+  const sc=qs(pw);
+  const f=document.getElementById('mFill');
+  f.style.width=SW[sc]+'%';
+  f.style.background=`linear-gradient(90deg,${SC[sc]}66,${SC[sc]})`;
+  document.getElementById('mLabel').textContent=SL[sc];
+  document.getElementById('mLabel').style.color=SC[sc];
+  document.getElementById('mCrack').textContent='Est. crack time: '+CR[sc];
+  for(let i=0;i<5;i++){
+    const s=document.getElementById('s'+i);
+    s.style.background=i<=sc?SC[sc]:'rgba(255,255,255,.07)';
+    s.style.boxShadow=i<=sc?`0 0 8px ${SC[sc]}55`:'none';
+  }
+}
+
+function qs(pw){
+  let s=0;
+  if(pw.length>=8)s++;if(pw.length>=12)s++;
+  if(/[A-Z]/.test(pw))s+=.5;if(/[a-z]/.test(pw))s+=.5;
+  if(/[0-9]/.test(pw))s+=.5;if(/[^a-zA-Z0-9]/.test(pw))s++;
+  if(/qwerty|asdf|1234|password/i.test(pw))s-=2;
+  if(pw.length<6)s=0;
+  return Math.max(0,Math.min(4,Math.round(s)));
+}
+
+async function analysePassword(){
+  const pw=document.getElementById('pwInput').value;
+  if(!pw)return;
+  const btn=document.getElementById('analyseBtn');
+  document.getElementById('btnTxt').textContent='ANALYSING...';
+  btn.disabled=true;
+  try{
+    const r=await fetch('/analyse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+    renderResults(await r.json());
+  }catch(e){alert('Flask not running.');}
+  finally{document.getElementById('btnTxt').textContent='ANALYSE';btn.disabled=false;}
+}
+
+function renderResults(d){
+  const area=document.getElementById('resultsArea');
+  area.classList.remove('hidden');
+  setTimeout(()=>area.classList.add('revealed'),10);
+
+  const sc=d.strength_score;
+  document.getElementById('rClass').textContent=d.strength_label;
+  document.getElementById('rClass').style.color=SC[sc];
+  document.getElementById('rEntropy').textContent=d.entropy;
+  document.getElementById('rRisk').textContent=d.breach_risk;
+  document.getElementById('rRisk').style.color=d.breach_colour;
+  document.getElementById('rExp').textContent=d.breach_found?d.breach_count.toLocaleString():'None';
+  document.getElementById('rExp').style.color=d.breach_found?'#ef4444':'#10b981';
+
+  const fc={length:d.features.length>=12?'#00ffc8':d.features.length>=8?'#f59e0b':'#ef4444',num_special:d.features.num_special>0?'#10b981':'#ef4444'};
+  const fdefs=[{k:'length',l:'Length',ic:'⟷'},{k:'num_upper',l:'Uppercase',ic:'A'},{k:'num_lower',l:'Lowercase',ic:'a'},{k:'num_digits',l:'Digits',ic:'#'},{k:'num_special',l:'Special chars',ic:'*'},{k:'entropy',l:'Entropy',ic:'∿'}];
+  document.getElementById('featList').innerHTML=fdefs.map(f=>{
+    const c=fc[f.k]||'#3b82f6';
+    const pct=Math.min(100,f.k==='entropy'?(d.features[f.k]/5)*100:(d.features[f.k]/20)*100);
+    return`<div class="feat-row"><span class="fic">${f.ic}</span><span class="fname">${f.l}</span><div class="fbar-wrap"><div class="fbar" style="width:${pct}%;background:${c}22;border-color:${c}"></div></div><span class="fnum mono" style="color:${c}">${d.features[f.k]}</span></div>`;
+  }).join('');
+
+  const fm={keyboard_walk:'bad',dict_word:'bad',name_year_combo:'warn',char_substitution:'warn',none_detected:'ok'};
+  const fi={bad:'✕',warn:'!',ok:'✓',info:'◈'};
+  document.getElementById('flagWrap').innerHTML=d.flags.map(f=>{
+    const cls=fm[f]||'info';
+    return`<div class="flag-chip fc-${cls}"><span>${fi[cls]}</span>${f.replace(/_/g,' ')}</div>`;
+  }).join('');
+
+  const rl=RM[d.breach_risk]??0;
+  const rc=d.breach_colour||RC[d.breach_risk]||'#888';
+  const card=document.getElementById('breachCard');
+  card.style.setProperty('--rc',rc);
+  card.style.borderColor=rc+'33';
+
+  const orb=document.getElementById('borb');
+  orb.textContent=d.breach_found?'✕':'✓';
+  orb.className='borb '+(d.breach_found?'orb-y':'orb-n');
+  orb.style.setProperty('--oc',rc);
+
+  document.getElementById('bVerdict').textContent=d.breach_found?'FOUND IN BREACH DATABASE':'NOT IN BREACH DATABASE';
+  document.getElementById('bVerdict').style.color=rc;
+  document.getElementById('bSub').textContent=d.breach_found?`${d.breach_count.toLocaleString()} known exposures`:'k-Anonymity protocol passed · 847M+ checked';
+
+  document.querySelectorAll('.tier').forEach((t,i)=>{
+    t.classList.toggle('tier-on',i===rl);
+    if(i===rl){t.style.background=rc+'22';t.style.color=rc;t.style.borderColor=rc+'66';}
+    else{t.style.background='';t.style.color='';t.style.borderColor='';}
+  });
+  document.getElementById('rBarFill').style.width=d.breach_score+'%';
+  document.getElementById('rBarFill').style.background=`linear-gradient(90deg,${rc}66,${rc})`;
+  document.getElementById('rScore').textContent=`Risk Score: ${d.breach_score} / 100`;
+
+  const ib=document.getElementById('intelBox');
+  ib.style.borderColor=rc+'44';
+  document.getElementById('idot')&&(document.querySelector('.idot').style.background=rc);
+  document.getElementById('intelTxt').textContent=d.breach_advice;
+
+  document.getElementById('recCount').textContent=d.recommendations.length+' recommendations';
+  document.getElementById('recGrid').innerHTML=d.recommendations.map((r,i)=>`
+    <div class="rec-card" style="animation-delay:${i*60}ms">
+      <div class="rnum">${String(i+1).padStart(2,'0')}</div>
+      <p>${r}</p>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>

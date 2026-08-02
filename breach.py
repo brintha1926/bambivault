@@ -4,7 +4,7 @@ breach.py — BambiVault Custom Breach Detection Module
 Project : BambiVault — An Interactive System for Evaluating
           Password Behaviour and Security Awareness Among University Students
 Author  : Brintha
-ID      : 2305162
+
 
 What makes this module custom-developed:
 ------------------------------------------------------------------
@@ -41,7 +41,7 @@ from collections import defaultdict
 
 
 # =============================================================================
-# CUSTOMISATION SECTION — edit these values freely
+# CUSTOMISATION SECTION 
 # =============================================================================
 
 # API settings
@@ -299,13 +299,7 @@ def _set_cache(prefix: str, result: dict):
 
 
 def get_breach_age(prefix: str) -> dict:
-    """
-    BREACH AGE TRACKING — reports when this hash prefix was FIRST recorded
-    by BambiVault (first_seen), as distinct from when it was last (re)cached
-    (cached_at). Lets the frontend show "first flagged N days ago" instead of
-    just a raw exposure count, giving admins a sense of whether a pattern is
-    newly emerging or has been a long-standing risk in the dataset.
-    """
+ 
     try:
         conn = _cache_db_connect()
         row = conn.execute(
@@ -330,9 +324,7 @@ def get_breach_age(prefix: str) -> dict:
 # HIBP API QUERY
 # =============================================================================
 #
-# RETRY WITH BACKOFF — a single slow/flaky request used to just fail outright
-# and fall back to local-only assessment. Now we retry with a short delay
-# (1s, then 2s) before giving up, which cuts down on spurious api_status:
+# RETRY WITH BACKOFF
 # "error"/"timeout" results during live demos on shaky connections.
 
 RETRY_MAX_RETRIES = 2

@@ -55,6 +55,16 @@ def _require_env(var_name: str) -> str:
 
 SECRET_KEY      = _require_env('SECRET_KEY')
 ADMIN_PASSWORD  = _require_env('ADMIN_PASSWORD')
+SECRET_KEY      = os.environ.get('SECRET_KEY', 'dev-only-fallback-change-me')
+ADMIN_PASSWORD  = os.environ.get('ADMIN_PASSWORD', 'bambi123')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
+
+if not SECRET_KEY or not ADMIN_PASSWORD:
+    raise RuntimeError(
+        "SECRET_KEY and ADMIN_PASSWORD must be set as environment variables. "
+        "Create a .env file locally (see README) or set them in your hosting platform's dashboard."
+    )
 DATABASE_URL    = os.environ.get('DATABASE_URL', 'sqlite:///password_logs.db')
 FLASK_DEBUG     = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
 
@@ -62,9 +72,6 @@ FLASK_DEBUG     = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
 # ─────────────────────────────────────────────────────────────────────────────
 # LOGGING
 # ─────────────────────────────────────────────────────────────────────────────
-# Every /analyse call and admin action gets logged to logs/bambivault.log,
-# rotating at 1MB so the log file doesn't grow unbounded. This gives an
-# audit trail for the report — e.g. "system handled N requests, X% errors".
 
 os.makedirs('logs', exist_ok=True)
 

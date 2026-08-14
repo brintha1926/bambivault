@@ -24,3 +24,4 @@ data/training_data_v2.csv
 data/training_data_v3.csv
 data/breach_cache.db
 model/*.pkl
+!model/strength_model_rf_v3.pkl

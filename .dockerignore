@@ -1,0 +1,17 @@
+.env
+.git
+.gitignore
+.pytest_cache
+.mypy_cache
+.vscode
+__pycache__
+*.py[cod]
+*.db
+*.sqlite
+*.sqlite3
+*.log
+venv
+.venv
+instance
+logs
+explore_data.zip

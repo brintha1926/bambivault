@@ -1,0 +1,629 @@
+{% extends "base.html" %}
+{% block title %}BambiVault — Account Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Account settings</h1>
+      <p class="page-subtitle">Manage your profile, security, and vault preferences.</p>
+    </div>
+  </div>
+
+  <div class="settings-grid">
+    <nav class="settings-side" aria-label="Settings sections">
+      <button class="settings-tab active" type="button" data-section="profile" aria-current="true">Profile</button>
+      <button class="settings-tab" type="button" data-section="security">Security</button>
+      <button class="settings-tab" type="button" data-section="vault">Vault</button>
+      <button class="settings-tab" type="button" data-section="danger">Danger zone</button>
+    </nav>
+
+    <div>
+      <!-- PROFILE -->
+      <div class="panel" id="section-profile" role="region" aria-labelledby="profile-title">
+        <h3 class="panel-title" id="profile-title">Profile</h3>
+        <p class="panel-sub">Your basic account information.</p>
+        <div class="field">
+          <label class="field-label" for="profileEmail">Email</label>
+          <input class="input settings-readonly" id="profileEmail" disabled>
+        </div>
+        <div class="field">
+          <label class="field-label" for="profileUsername">Username</label>
+          <div class="flex gap-2">
+            <input class="input" id="profileUsername" aria-describedby="usernameErr">
+          </div>
+          <div class="field-error mt-1" id="usernameErr" role="alert"></div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="profileCreated">Member since</label>
+          <input class="input settings-readonly" id="profileCreated" disabled>
+        </div>
+        <button class="btn btn-primary" type="button" onclick="saveUsername()">Save changes</button>
+      </div>
+
+      <!-- SECURITY -->
+      <div class="panel mt-4 hidden" id="section-security" role="region" aria-labelledby="security-title">
+        <h3 class="panel-title" id="security-title">Sign-in security</h3>
+        <div class="settings-action-list">
+          <div class="settings-action-row">
+            <div>
+              <div class="settings-action-title">Email address</div>
+              <div class="settings-action-desc" id="profileSecurityEmail"></div>
+            </div>
+            <div class="settings-action-controls">
+              <span id="verifyStatus">Checking…</span>
+              <button class="btn btn-ghost btn-sm" type="button" id="resendVerify" onclick="resendVerification()">Resend email</button>
+            </div>
+          </div>
+          <div class="settings-action-row">
+            <div>
+              <div class="settings-action-title">Password</div>
+              <div class="settings-action-desc">Update your account sign-in password.</div>
+            </div>
+            <a href="{{ url_for('vault_bp.forgot_password_page') }}" class="btn btn-secondary btn-sm">Change password</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel mt-4 hidden" id="section-security-2fa" role="region" aria-labelledby="twofa-title">
+        <div class="panel-header">
+          <div>
+            <h3 class="panel-title" id="twofa-title">Two-factor authentication</h3>
+            <p class="panel-sub">Add an authenticator code to your sign-in process.</p>
+          </div>
+          <span class="badge" id="twofaBadge" style="background:var(--surface-3); color:var(--text-secondary)">Checking…</span>
+        </div>
+
+        <div id="twofaOff">
+          <button class="btn btn-primary" type="button" onclick="start2FASetup()">Set up 2FA</button>
+        </div>
+
+        <div id="twofaSetupBox" class="hidden">
+          <p class="text-sm mb-3">Scan this code using a compatible authenticator application, such as Google Authenticator, Microsoft Authenticator, or Authy.</p>
+          <div class="twofa-qr-wrap">
+            <img id="twofaQR" alt="2FA QR code" class="twofa-qr">
+            <div class="font-mono text-xs text-text-secondary mt-3 break-all">Can't scan? Enter manually: <strong id="twofaSecret"></strong></div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="twofaToken">Enter the 6-digit code from your app</label>
+            <div class="flex gap-2">
+              <input class="input" id="twofaToken" placeholder="123456" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+              <button class="btn btn-primary" type="button" onclick="verify2FA()" style="white-space:nowrap">Verify &amp; enable</button>
+            </div>
+            <div class="field-error mt-2" id="twofaSetupErr" role="alert"></div>
+          </div>
+        </div>
+
+        <div id="twofaRecoveryBox" class="hidden">
+          <div class="alert alert-warning">
+            <svg class="alert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            <span><strong>Save these recovery codes now.</strong> Each works once, and this is the only time they're shown. If you lose your authenticator app, a recovery code is the only way back in.</span>
+          </div>
+          <div class="recovery-codes" id="recoveryCodesGrid"></div>
+          <button class="btn btn-secondary" type="button" onclick="finishTwoFASetup()">I have securely saved these codes</button>
+        </div>
+
+        <div id="twofaOn" class="hidden">
+          <p class="text-sm text-text-secondary mb-3">Two-factor authentication is protecting your account.</p>
+          <div class="field">
+            <label class="field-label" for="disable2FAPassword">Enter your password to disable</label>
+            <div class="flex gap-2">
+              <div class="input-with-action" style="flex:1">
+                <input class="input" type="password" id="disable2FAPassword" autocomplete="current-password" data-form-type="password" data-lpignore="true">
+                <button type="button" class="input-action settings-eye" data-toggle-pw="disable2FAPassword" aria-label="Show account password" aria-pressed="false"><i data-lucide="eye" aria-hidden="true"></i></button>
+              </div>
+              <button class="btn btn-danger" type="button" onclick="disable2FA()" style="white-space:nowrap">Disable 2FA</button>
+            </div>
+            <div class="field-error mt-2" id="twofaDisableErr" role="alert"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel mt-4 hidden" id="section-security-sessions" role="region" aria-labelledby="sessions-title">
+        <h3 class="panel-title" id="sessions-title">Active sessions</h3>
+        <p class="panel-sub">Review devices and sessions currently signed in to your account.</p>
+        <div id="sessionsList"><p class="text-sm text-text-muted">Loading…</p></div>
+      </div>
+
+      <!-- VAULT -->
+      <div class="panel mt-4 hidden" id="section-vault" role="region" aria-labelledby="vault-title">
+        <div class="panel-header">
+          <div>
+            <h3 class="panel-title" id="vault-title">Vault</h3>
+          </div>
+          <span class="badge" id="vaultStatusBadge" style="background:var(--surface-3); color:var(--text-secondary)">Checking…</span>
+        </div>
+        <div class="settings-status-line" id="vaultLockNote"></div>
+        <div class="settings-danger-row">
+          <div>
+            <div class="settings-action-title">Reset vault</div>
+            <div class="settings-action-desc">Erase all saved credentials and create new vault credentials.</div>
+          </div>
+          <button class="btn btn-danger btn-sm" type="button" onclick="openResetVaultDialog()">Reset</button>
+        </div>
+      </div>
+
+      <div class="panel mt-4 hidden" id="section-vault-autolock" role="region" aria-labelledby="autolock-title">
+        <h3 class="panel-title" id="autolock-title">Auto-lock timeout</h3>
+        <p class="panel-sub">Lock the vault automatically after inactivity.</p>
+        <div class="flex items-center gap-3 flex-wrap">
+          <select class="db-sel" id="autoLockSelect">
+            <option value="5">5 minutes</option>
+            <option value="15">15 minutes (default)</option>
+            <option value="30">30 minutes</option>
+            <option value="60">1 hour</option>
+            <option value="240">4 hours</option>
+          </select>
+          <button class="btn btn-primary btn-sm" type="button" onclick="saveAutoLock()">Save timeout</button>
+          <span class="text-sm text-success" id="autoLockSaved" style="display:none" role="status" aria-live="polite">Saved ✓</span>
+        </div>
+      </div>
+
+      <div class="panel mt-4 hidden" id="section-vault-key" role="region" aria-labelledby="acctkey-title">
+        <h3 class="panel-title" id="acctkey-title">Account Key</h3>
+        <div class="settings-note-list">
+          <div><i data-lucide="key-round" aria-hidden="true"></i><span>Required with your master password to unlock the vault.</span></div>
+          <div><i data-lucide="shield-off" aria-hidden="true"></i><span>Not stored or recoverable by BambiVault.</span></div>
+          <div><i data-lucide="rotate-ccw" aria-hidden="true"></i><span>If lost, reset the vault to create a new key.</span></div>
+        </div>
+      </div>
+
+      <!-- DANGER ZONE -->
+      <div class="panel danger-zone mt-4 hidden" id="section-danger" role="region" aria-labelledby="danger-title">
+        <h3 class="panel-title" id="danger-title">Account deletion</h3>
+        <p class="panel-sub">This action is permanent and cannot be undone.</p>
+        <p class="mb-2 text-sm">Deleting your account will remove:</p>
+        <ul class="text-sm text-text-secondary mb-4 pl-5 space-y-1" style="list-style:disc">
+          <li>Your account profile</li>
+          <li>All analysis history linked to your account</li>
+          <li>All vault entries and your two-factor setup</li>
+          <li>All active sessions</li>
+        </ul>
+        <div class="field">
+          <label class="field-label" for="confirmUsername">Type your username to confirm</label>
+          <input class="input" id="confirmUsername" autocomplete="off" aria-describedby="confirmUsername-hint">
+          <p class="field-hint" id="confirmUsername-hint">Must match the username on your account.</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="deletePassword">Enter your account password</label>
+          <div class="input-with-action">
+            <input class="input" type="password" id="deletePassword" autocomplete="current-password" data-form-type="password" data-lpignore="true">
+            <button type="button" class="input-action settings-eye" data-toggle-pw="deletePassword" aria-label="Show account password" aria-pressed="false"><i data-lucide="eye" aria-hidden="true"></i></button>
+          </div>
+        </div>
+        <div class="field-error mb-3" id="deleteErr" role="alert"></div>
+        <button class="btn btn-danger" type="button" onclick="openConfirm('deleteAccount')">Delete my account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation dialog -->
+  <dialog id="confirmDialog" aria-labelledby="confirmDialogTitle" class="modal">
+    <h3 class="modal-title" id="confirmDialogTitle">Confirm action</h3>
+    <p class="modal-body" id="confirmDialogBody">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" type="button" id="confirmCancel">Cancel</button>
+      <button class="btn btn-danger" type="button" id="confirmProceed">Proceed</button>
+    </div>
+  </dialog>
+
+  <dialog id="resetVaultDialog" aria-labelledby="resetVaultDialogTitle" class="modal">
+    <form id="resetVaultForm" method="dialog">
+      <h3 class="modal-title" id="resetVaultDialogTitle">Reset vault</h3>
+      <p class="modal-body">Enter both vault credentials to permanently erase all saved entries.</p>
+      <div class="field-group mb-3">
+        <label class="field-label" for="resetVaultPassword">Vault master password</label>
+        <div class="input-with-action">
+          <input class="input" id="resetVaultPassword" type="password" autocomplete="current-password" required>
+          <button type="button" class="input-action settings-eye" data-toggle-pw="resetVaultPassword" aria-label="Show vault master password" aria-pressed="false"><i data-lucide="eye" aria-hidden="true"></i></button>
+        </div>
+      </div>
+      <div class="field-group mb-3">
+        <label class="field-label" for="resetVaultAccountKey">Account Key</label>
+        <input class="field-input" id="resetVaultAccountKey" type="text" autocomplete="off" spellcheck="false" required>
+      </div>
+      <div class="field-error mb-3" id="resetVaultErr" role="alert"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" id="resetVaultCancel">Cancel</button>
+        <button class="btn btn-danger" type="submit" id="resetVaultProceed">Reset vault</button>
+      </div>
+    </form>
+  </dialog>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Show / hide password toggle
+document.querySelectorAll('[data-toggle-pw]').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var id = btn.getAttribute('data-toggle-pw');
+    var input = document.getElementById(id);
+    if (!input) return;
+    var showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    btn.setAttribute('aria-pressed', String(!showing));
+    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    btn.innerHTML = showing ? '<i data-lucide="eye" aria-hidden="true"></i>' : '<i data-lucide="eye-off" aria-hidden="true"></i>';
+    lucide.createIcons();
+  });
+});
+
+const SECTION_GROUPS = {
+  profile:  ['section-profile'],
+  security: ['section-security', 'section-security-2fa', 'section-security-sessions'],
+  vault:    ['section-vault', 'section-vault-autolock', 'section-vault-key'],
+  danger:   ['section-danger'],
+};
+
+var signedInUsername = '';
+
+document.querySelectorAll('.settings-tab').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.settings-tab').forEach(function(b){
+      b.classList.remove('active');
+      b.removeAttribute('aria-current');
+    });
+    btn.classList.add('active');
+    btn.setAttribute('aria-current', 'true');
+
+    Object.values(SECTION_GROUPS).flat().forEach(function(id){ document.getElementById(id).classList.add('hidden'); });
+    SECTION_GROUPS[btn.dataset.section].forEach(function(id){ document.getElementById(id).classList.remove('hidden'); });
+
+    if (btn.dataset.section === 'security') loadSessions();
+  });
+});
+
+(async function(){
+  try{
+    var r = await fetch('/api/account/status');
+    var d = await r.json();
+    if(!d.logged_in){ window.location.href = '{{ url_for("login") }}'; return; }
+
+    document.getElementById('profileEmail').value = d.email || '';
+    document.getElementById('profileSecurityEmail').textContent = d.email || '';
+    document.getElementById('profileUsername').value = d.username || '';
+    signedInUsername = d.username || '';
+
+    var verify = document.getElementById('verifyStatus');
+    verify.innerHTML = d.email_verified
+      ? '<span class="badge badge-clean">Verified</span>'
+      : '<span class="badge badge-m">Not verified</span>';
+    document.getElementById('resendVerify').classList.toggle('hidden', d.email_verified);
+
+    var v = document.getElementById('vaultStatusBadge');
+    if(d.vault_configured){
+      v.textContent = 'Configured';
+      v.className = 'badge badge-clean';
+      document.getElementById('vaultLockNote').textContent = d.vault_unlocked
+        ? 'Your vault is currently unlocked in this browser session.'
+        : 'Your vault is currently locked. Unlock it from the Vault page.';
+    } else {
+      v.textContent = 'Not configured';
+      v.className = 'badge';
+      v.style.background = 'var(--surface-3)';
+      v.style.color = 'var(--text-secondary)';
+      document.getElementById('vaultLockNote').textContent = 'Set up your vault from the Vault page to start saving entries.';
+    }
+
+    document.getElementById('profileCreated').value = d.created_at || '—';
+
+    render2FAStatus(d.twofa_enabled);
+  }catch(e){ window.location.href = '{{ url_for("login") }}'; }
+})();
+
+/* Two-factor authentication */
+
+function render2FAStatus(enabled){
+  var badge = document.getElementById('twofaBadge');
+  document.getElementById('twofaOff').classList.toggle('hidden', enabled);
+  document.getElementById('twofaOn').classList.toggle('hidden', !enabled);
+  document.getElementById('twofaSetupBox').classList.add('hidden');
+  document.getElementById('twofaRecoveryBox').classList.add('hidden');
+  if (enabled) {
+    badge.textContent = 'Enabled';
+    badge.className = 'badge badge-clean';
+  } else {
+    badge.textContent = 'Disabled';
+    badge.className = 'badge';
+    badge.style.background = 'var(--surface-3)';
+    badge.style.color = 'var(--text-secondary)';
+  }
+}
+
+async function start2FASetup(){
+  try {
+    var r = await fetch('/api/account/2fa/setup', {method:'POST'});
+    var d = await r.json();
+    if(d.error){ if (window.bvToast) window.bvToast({ kind: 'danger', message: d.error }); else alert(d.error); return; }
+    document.getElementById('twofaQR').src = d.qr_data;
+    document.getElementById('twofaSecret').textContent = d.secret;
+    document.getElementById('twofaOff').classList.add('hidden');
+    document.getElementById('twofaSetupBox').classList.remove('hidden');
+  } catch(e) {
+    if (window.bvToast) window.bvToast({ kind: 'danger', message: 'Could not start 2FA setup.' });
+  }
+}
+
+async function verify2FA(){
+  var err = document.getElementById('twofaSetupErr');
+  err.textContent = '';
+  var token = document.getElementById('twofaToken').value.trim();
+  try {
+    var r = await fetch('/api/account/2fa/verify', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({token})
+    });
+    var d = await r.json();
+    if(d.error || !r.ok){ err.textContent = d.error || 'Verification failed.'; return; }
+
+    document.getElementById('twofaSetupBox').classList.add('hidden');
+    document.getElementById('recoveryCodesGrid').innerHTML =
+      d.recovery_codes.map(function(c){return '<span>'+c+'</span>';}).join('');
+    document.getElementById('twofaRecoveryBox').classList.remove('hidden');
+  } catch(e) {
+    err.textContent = 'Verification failed.';
+  }
+}
+
+function finishTwoFASetup(){
+  render2FAStatus(true);
+  if (window.bvToast) window.bvToast({ kind: 'success', message: 'Two-factor authentication enabled.' });
+}
+
+async function disable2FA(){
+  var err = document.getElementById('twofaDisableErr');
+  err.textContent = '';
+  var password = document.getElementById('disable2FAPassword').value;
+  if(!password){ err.textContent = 'Please enter your password.'; return; }
+
+  try {
+    var r = await fetch('/api/account/2fa/disable', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({password})
+    });
+    var d = await r.json();
+    if(d.error || !r.ok){ err.textContent = d.error || 'Could not disable 2FA.'; return; }
+    document.getElementById('disable2FAPassword').value = '';
+    render2FAStatus(false);
+    if (window.bvToast) window.bvToast({ kind: 'success', message: 'Two-factor authentication disabled.' });
+  } catch(e) {
+    err.textContent = 'Could not disable 2FA.';
+  }
+}
+
+async function resendVerification(){
+  var btn = document.getElementById('resendVerify');
+  btn.disabled = true;
+  try {
+    var r = await fetch('/api/account/resend-verification', {method:'POST'});
+    var d = await r.json();
+    if(d.error){ if (window.bvToast) window.bvToast({ kind: 'danger', message: d.error }); }
+    else { if (window.bvToast) window.bvToast({ kind: 'success', message: 'Verification email sent.' }); }
+  } catch(e) {
+    if (window.bvToast) window.bvToast({ kind: 'danger', message: 'Could not resend verification email.' });
+  }
+  btn.disabled = false;
+}
+
+/* Sessions */
+
+async function loadSessions(){
+  var box = document.getElementById('sessionsList');
+  box.innerHTML = '<div class="skeleton" style="height:2.5rem;margin-bottom:.5rem"></div><div class="skeleton" style="height:2.5rem"></div>';
+  try{
+    var r = await fetch('/api/account/sessions');
+    var d = await r.json();
+    if(!d.sessions || !d.sessions.length){
+      box.innerHTML = '<p class="text-sm text-text-muted">No active sessions.</p>';
+      return;
+    }
+    box.innerHTML = d.sessions.map(function(s){
+      var escapeHTML = window.bvEscapeHTML;
+      return '<div class="session-row">'+
+        '<div class="session-meta">'+
+          '<strong>'+escapeHTML(s.user_agent.slice(0,60))+' '+(s.is_current ? '<span class="session-current">This device</span>' : '')+'</strong>'+
+          '<small>'+escapeHTML(s.ip_address)+' · last active '+escapeHTML(s.last_activity)+' · signed in '+escapeHTML(s.created_at)+'</small>'+
+        '</div>'+
+        '<button class="btn btn-danger btn-sm" type="button" onclick="openRevokeSession('+s.id+','+s.is_current+')">'+(s.is_current ? 'Sign out' : 'Revoke')+'</button>'+
+      '</div>';
+    }).join('');
+  }catch(e){
+    box.innerHTML = '<p class="text-sm text-text-muted">Could not load sessions.</p>';
+  }
+}
+
+function openRevokeSession(id, isCurrent){
+  var title = isCurrent ? 'Sign out of this device?' : 'Revoke this session?';
+  var body = isCurrent
+    ? 'This will sign you out of this browser immediately.'
+    : 'That device will be signed out immediately.';
+  openConfirmDialog({
+    title: title,
+    body: body,
+    proceedLabel: isCurrent ? 'Sign out' : 'Revoke',
+    onProceed: function(){ revokeSession(id, isCurrent); }
+  });
+}
+
+async function revokeSession(id, isCurrent){
+  try {
+    var r = await fetch('/api/account/sessions/revoke', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id: id})
+    });
+    var d = await r.json();
+    if (d.was_current) { window.location.href = '{{ url_for("login") }}'; return; }
+    loadSessions();
+    if (window.bvToast) window.bvToast({ kind: 'success', message: 'Session revoked.' });
+  } catch(e) {
+    if (window.bvToast) window.bvToast({ kind: 'danger', message: 'Could not revoke session.' });
+  }
+}
+
+/* Confirmation dialog */
+
+var confirmDialog = document.getElementById('confirmDialog');
+var confirmTitle  = document.getElementById('confirmDialogTitle');
+var confirmBody   = document.getElementById('confirmDialogBody');
+var confirmCancel = document.getElementById('confirmCancel');
+var confirmProceed = document.getElementById('confirmProceed');
+var confirmCallback = null;
+var lastConfirmTrigger = null;
+
+confirmCancel.addEventListener('click', function(){
+  if (confirmDialog.open) confirmDialog.close();
+  confirmCallback = null;
+  if (lastConfirmTrigger) lastConfirmTrigger.focus();
+});
+confirmDialog.addEventListener('close', function(){
+  if (confirmDialog.returnValue !== 'proceed' && lastConfirmTrigger) {
+    // closed via Esc — restore focus
+    lastConfirmTrigger.focus();
+  }
+  confirmCallback = null;
+});
+confirmProceed.addEventListener('click', function(){
+  confirmDialog.close('proceed');
+  if (confirmCallback) confirmCallback();
+});
+
+function openConfirmDialog(opts){
+  confirmTitle.textContent = opts.title || 'Confirm action';
+  confirmBody.textContent = opts.body || 'Are you sure?';
+  confirmProceed.textContent = opts.proceedLabel || 'Proceed';
+  confirmCallback = opts.onProceed || null;
+  lastConfirmTrigger = document.activeElement;
+  if (typeof confirmDialog.showModal === 'function') {
+    confirmDialog.showModal();
+    confirmProceed.focus();
+  } else {
+    if (window.bvToast) window.bvToast({ kind: 'danger', message: 'This action requires a browser with dialog support.' });
+  }
+}
+
+function openConfirm(action){
+  if (action === 'deleteAccount') {
+    openConfirmDialog({
+      title: 'Delete your account permanently?',
+      body: 'Your account, all analysis history, vault entries, and 2FA setup will be removed. This cannot be undone.',
+      proceedLabel: 'Delete account',
+      onProceed: deleteAccount
+    });
+  }
+}
+
+var resetVaultDialog = document.getElementById('resetVaultDialog');
+var resetVaultTrigger = null;
+
+function openResetVaultDialog(){
+  resetVaultTrigger = document.activeElement;
+  document.getElementById('resetVaultErr').textContent = '';
+  document.getElementById('resetVaultForm').reset();
+  resetVaultDialog.showModal();
+  document.getElementById('resetVaultPassword').focus();
+}
+
+document.getElementById('resetVaultCancel').addEventListener('click', function(){
+  resetVaultDialog.close();
+});
+resetVaultDialog.addEventListener('close', function(){
+  if (resetVaultTrigger) resetVaultTrigger.focus();
+});
+document.getElementById('resetVaultForm').addEventListener('submit', confirmResetVault);
+
+async function confirmResetVault(event){
+  event.preventDefault();
+  var pw = document.getElementById('resetVaultPassword').value;
+  var key = document.getElementById('resetVaultAccountKey').value.trim();
+  var err = document.getElementById('resetVaultErr');
+  var proceed = document.getElementById('resetVaultProceed');
+  err.textContent = '';
+  if (!pw || !key) { err.textContent = 'Enter your vault master password and Account Key.'; return; }
+  proceed.disabled = true;
+  try {
+    var r = await fetch('/api/vault/reset', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ master_password: pw, account_key: key })
+    });
+    var d = await r.json();
+    if(d.error || !r.ok){
+      err.textContent = d.error || 'The vault could not be reset.';
+      return;
+    }
+    resetVaultDialog.close();
+    if (window.bvToast) window.bvToast({ kind: 'success', message: 'Vault reset. You can set it up again from the Vault page.' });
+    window.location.href = '{{ url_for("vault_page") }}';
+  } catch(e) {
+    err.textContent = 'The vault could not be reset. Please try again.';
+  } finally {
+    proceed.disabled = false;
+  }
+}
+
+/* Account and vault settings */
+
+async function saveAutoLock(){
+  var minutes = parseInt(document.getElementById('autoLockSelect').value, 10);
+  try {
+    var r = await fetch('/api/vault/auto-lock', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({minutes})
+    });
+    var d = await r.json();
+    if(d.error){ if (window.bvToast) window.bvToast({ kind: 'danger', message: d.error }); return; }
+    var saved = document.getElementById('autoLockSaved');
+    saved.style.display = 'inline';
+    setTimeout(function(){ saved.style.display = 'none'; }, 2000);
+  } catch(e) {
+    if (window.bvToast) window.bvToast({ kind: 'danger', message: 'Could not save setting.' });
+  }
+}
+
+async function saveUsername(){
+  var err = document.getElementById('usernameErr');
+  err.textContent = '';
+  var username = document.getElementById('profileUsername').value.trim();
+  try {
+    var r = await fetch('/api/account/update-username', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username})
+    });
+    var d = await r.json();
+    if(d.error || !r.ok){ err.textContent = d.error || 'Could not save username.'; return; }
+    if (window.bvToast) window.bvToast({ kind: 'success', message: 'Username updated.' });
+  } catch(e) {
+    err.textContent = 'Could not save username.';
+  }
+}
+
+async function deleteAccount(){
+  var err = document.getElementById('deleteErr');
+  err.textContent = '';
+  var typedUsername = document.getElementById('confirmUsername').value.trim();
+  var password = document.getElementById('deletePassword').value;
+  if(!password){ err.textContent = 'Please enter your password.'; return; }
+  if (!typedUsername) { err.textContent = 'Please type your username to confirm.'; return; }
+  if (typedUsername !== signedInUsername) {
+    err.textContent = 'The username does not match your account.';
+    document.getElementById('confirmUsername').focus();
+    return;
+  }
+
+  // Server is expected to also verify the password; username confirmation is
+  // additional client-side friction to prevent accidental deletion.
+  try {
+    var r = await fetch('/api/account/delete', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({password: password, confirm_username: typedUsername})
+    });
+    var d = await r.json();
+    if(d.error || !r.ok){ err.textContent = d.error || 'Could not delete account.'; return; }
+    window.location.href = '{{ url_for("index") }}';
+  } catch(e) {
+    err.textContent = 'Could not delete account.';
+  }
+}
+</script>
+{% endblock %}

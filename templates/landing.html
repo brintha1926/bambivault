@@ -1,0 +1,127 @@
+{% extends "public_base.html" %}
+{% block title %}BambiVault | Password security intelligence{% endblock %}
+
+{% block public_nav_links %}
+  <a href="#features" class="nav-text-mobile-hide">Features</a>
+  <a href="#how" class="nav-text-mobile-hide">Workflow</a>
+  <a href="#privacy" class="nav-text-mobile-hide">Privacy</a>
+  <a href="{{ url_for('login') }}" class="nav-text-mobile-hide">Sign in</a>
+  <a href="{{ url_for('register') }}" class="nav-cta">Create account</a>
+{% endblock %}
+
+{% block public_content %}
+<main class="landing-main">
+  <section class="landing-hero">
+    <div class="landing-hero-ambient" aria-hidden="true">
+      <span class="landing-glow landing-glow-one"></span>
+      <span class="landing-glow landing-glow-two"></span>
+    </div>
+    <h1 class="landing-title">Discover password weaknesses beyond <span class="hl">basic strength scores</span></h1>
+    <p class="landing-sub">Trained on 14 million real leaked passwords. Checked against 847 million known breaches and provides targeted guidance for detected weaknesses.</p>
+    <div class="landing-cta-row">
+      <a href="{{ url_for('analyser_page') }}" class="btn btn-primary">Analyse a password</a>
+      <a href="{{ url_for('register') }}" class="btn btn-ghost">Create an account</a>
+    </div>
+  </section>
+
+  <div class="landing-shot">
+    <div class="landing-shot-frame">
+      <img src="{{ url_for('static', filename='img/landing-product.svg') }}"
+           alt="BambiVault analyser showing a weak password, known breach exposure, and stronger personalised alternatives.">
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item"><div class="snum">14M+</div><div class="slbl">Training passwords</div></div>
+    <div class="stat-item"><div class="snum">847M+</div><div class="slbl">Breach records checked</div></div>
+    <div class="stat-item"><div class="snum">82%</div><div class="slbl">Model accuracy</div></div>
+    <div class="stat-item"><div class="snum">&lt;1s</div><div class="slbl">Per analysis</div></div>
+  </div>
+
+  <section class="section" id="features">
+    <div class="section-hdr">
+      <h2>Password security intelligence</h2>
+      <p>BambiVault combines machine learning, behavioural pattern detection, and breach intelligence to deliver a more complete assessment of password risk.</p>
+    </div>
+    <div class="feature-row">
+      <div class="feature-card">
+        <div class="fc-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="9"/></svg></div>
+        <h3>Machine-learning classification</h3>
+        <p>A Random Forest model trained on real-world leaked passwords evaluates security across five strength categories, beyond conventional composition rules.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L4 6v6c0 5.25 3.5 10.14 8 11.35C16.5 22.14 20 17.25 20 12V6L12 2z"/></svg></div>
+        <h3>Privacy-preserving breach intelligence</h3>
+        <p>Known exposure is identified using k-anonymity, ensuring the complete password is never transmitted to the breach-checking provider.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fc-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+        <h3>Personalised security guidance</h3>
+        <p>Every assessment translates detected weaknesses into focused recommendations and stronger alternatives relevant to the submitted password.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how" style="background:var(--surface-2); border-radius:var(--r-lg);">
+    <div class="section-hdr">
+      <h2>The BambiVault assessment process</h2>
+      <p>Comprehensive security intelligence in three focused steps.</p>
+    </div>
+    <div class="how-steps">
+      <div class="how-step"><div class="step-num">1</div><h3>Submit a password for assessment</h3><p>BambiVault calculates initial security indicators and evaluates its structural characteristics.</p></div>
+      <div class="how-step"><div class="step-num">2</div><h3>Detect weaknesses and known exposure</h3><p>Behavioural patterns are evaluated locally, while breach detection uses only a five-character hash prefix.</p></div>
+      <div class="how-step"><div class="step-num">3</div><h3>Receive actionable security intelligence</h3><p>Review the risk classification, detected weaknesses, breach exposure, and tailored improvement recommendations.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-hdr">
+      <h2>Research-driven security analysis</h2>
+      <p>BambiVault combines established security techniques with real-world password data to produce explainable, consistent, and relevant assessments.</p>
+    </div>
+    <div class="methodology-panel">
+      <div class="method-item"><div class="mi-dot"></div><div><h4>Real-world training data</h4><p>The classification model is trained using the RockYou dataset, a widely recognised corpus for password-security research.</p></div></div>
+      <div class="method-item"><div class="mi-dot"></div><div><h4>Validated machine-learning model</h4><p>The Random Forest classifier achieved 82% test accuracy across five strength categories after controls were introduced to prevent feature-label leakage.</p></div></div>
+      <div class="method-item"><div class="mi-dot"></div><div><h4>Privacy-preserving exposure checks</h4><p>Breach intelligence uses a five-character hash prefix. The complete password is never submitted to the external provider.</p></div></div>
+      <div class="method-item"><div class="mi-dot"></div><div><h4>Behavioural risk detection</h4><p>BambiVault identifies keyboard walks, names with years, substitutions, and dictionary words that conventional strength meters may overlook.</p></div></div>
+    </div>
+  </section>
+
+  <section class="section" id="privacy">
+    <div class="privacy-panel">
+      <h2>Designed for privacy</h2>
+      <p class="section-sub">Clear safeguards govern how passwords and account information are processed.</p>
+      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Passwords submitted for assessment are not retained in plaintext.</div>
+      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Breach checks transmit only a partial hash, never the complete password.</div>
+      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Guest assessments are not linked to an account or retained in account history.</div>
+      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Vault data is encrypted using the account holder's master password and Account Key.</div>
+      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Administrative reporting contains aggregated and anonymised statistics only.</div>
+      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Account deletion removes the associated profile and vault data.</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-hdr"><h2>Frequently asked questions</h2></div>
+    <details class="faq-item" open><summary>Can I safely assess an active password? <span class="fq-plus">+</span></summary><p>BambiVault does not retain submitted passwords in plaintext, and breach checks use only a partial hash. For additional caution, use a representative password with a comparable structure.</p></details>
+    <details class="faq-item"><summary>Do I need an account? <span class="fq-plus">+</span></summary><p>No. Password assessments are available immediately. An account provides access to analysis history, personalised insights, and encrypted vault capabilities.</p></details>
+    <details class="faq-item"><summary>How does my account password differ from my vault master password? <span class="fq-plus">+</span></summary><p>Your account password authenticates access to BambiVault. Your vault master password and Account Key are separate security factors used to decrypt vault entries.</p></details>
+    <details class="faq-item"><summary>Who can access institutional analytics? <span class="fq-plus">+</span></summary><p>Access is limited to authorised administrators. Reports contain aggregated statistics and do not expose individual passwords or identifiable submissions.</p></details>
+  </section>
+
+  <div class="final-cta">
+    <h2>Strengthen your password security</h2>
+    <p>Move beyond basic strength scores with <strong>machine-learning analysis</strong>, <strong>behavioural insights</strong>, and <strong>real-world breach intelligence</strong>.</p>
+    <a href="{{ url_for('analyser_page') }}" class="btn btn-primary btn-lg">Analyse a password</a>
+  </div>
+
+  <footer class="site-footer">
+    <div class="fl">
+      <span class="brand-name">Bambi<span class="brand-acc">Vault</span></span>
+      <a href="#privacy">Privacy</a>
+      <a href="https://github.com/brintha1926/bambivault" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://www.linkedin.com/in/brintha-subra/" target="_blank" rel="noopener noreferrer">Contact</a>
+    </div>
+    <div class="fmeta">Independent password security tool.</div>
+  </footer>
+</main>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}BambiVault | Administrator security{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <div class="page-header"><div><h1 class="page-title">Administrator security</h1><p class="page-subtitle">Manage password recovery and sign-in protection.</p></div></div>
+  <div class="settings-security-stack">
+    <section class="panel" aria-labelledby="admin-password-title">
+      <h2 class="panel-title" id="admin-password-title">Change password</h2>
+      <form id="adminPasswordForm" class="settings-form-compact">
+        <div class="field"><label class="field-label" for="currentPassword">Current password</label><input class="input" type="password" id="currentPassword" autocomplete="current-password" required></div>
+        <div class="field"><label class="field-label" for="newPassword">New password</label><input class="input" type="password" id="newPassword" minlength="12" autocomplete="new-password" required></div>
+        <div class="field"><label class="field-label" for="confirmPassword">Confirm new password</label><input class="input" type="password" id="confirmPassword" minlength="12" autocomplete="new-password" required></div>
+        <div class="field-error" id="passwordError" role="alert"></div>
+        <button class="btn btn-primary" type="submit">Update password</button>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="admin-2fa-title">
+      <div class="panel-header"><div><h2 class="panel-title" id="admin-2fa-title">Two-factor authentication</h2><p class="panel-sub">Add an authenticator code to administrator sign-in.</p></div><span class="badge {{ 'badge-clean' if twofa_enabled else '' }}" id="admin2faBadge">{{ 'Enabled' if twofa_enabled else 'Disabled' }}</span></div>
+      <div id="admin2faOff" class="{{ 'hidden' if twofa_enabled else '' }}"><button class="btn btn-primary" type="button" onclick="startAdmin2FA()">Set up 2FA</button></div>
+      <div id="admin2faSetup" class="hidden">
+        <p class="text-sm mb-2">Scan this code using a compatible authenticator application.</p>
+        <div class="twofa-qr-wrap"><img id="admin2faQR" alt="Administrator two-factor authentication QR code"><div class="text-xs mt-2">Manual key: <strong class="mono" id="admin2faSecret"></strong></div></div>
+        <div class="field"><label class="field-label" for="admin2faToken">Authentication code</label><input class="input" id="admin2faToken" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
+        <div class="field-error" id="admin2faError" role="alert"></div>
+        <button class="btn btn-primary" type="button" onclick="verifyAdmin2FA()">Verify and enable</button>
+      </div>
+      <div id="admin2faRecovery" class="hidden"><div class="alert alert-warning">Store these one-time recovery codes securely. They will not be displayed again.</div><div class="recovery-codes" id="adminRecoveryCodes"></div></div>
+      <div id="admin2faOn" class="{{ '' if twofa_enabled else 'hidden' }}">
+        <div class="field"><label class="field-label" for="adminDisablePassword">Password required to disable</label><input class="input" type="password" id="adminDisablePassword" autocomplete="current-password"></div>
+        <div class="field-error" id="adminDisableError" role="alert"></div>
+        <button class="btn btn-danger" type="button" onclick="disableAdmin2FA()">Disable 2FA</button>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('adminPasswordForm').addEventListener('submit', async function(e){
+  e.preventDefault(); var err=document.getElementById('passwordError'); err.textContent='';
+  var r=await fetch('/api/admin/change-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current_password:currentPassword.value,password:newPassword.value,confirm:confirmPassword.value})}); var d=await r.json();
+  if(!r.ok){err.textContent=d.error||'Password could not be updated.';return;} window.location.href='{{ url_for("admin_login") }}';
+});
+async function startAdmin2FA(){var r=await fetch('/api/admin/2fa/setup',{method:'POST'}),d=await r.json();if(!r.ok){admin2faError.textContent=d.error;return;}admin2faQR.src=d.qr_data;admin2faSecret.textContent=d.secret;admin2faOff.classList.add('hidden');admin2faSetup.classList.remove('hidden');}
+async function verifyAdmin2FA(){var r=await fetch('/api/admin/2fa/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:admin2faToken.value.trim()})}),d=await r.json();if(!r.ok){admin2faError.textContent=d.error;return;}admin2faSetup.classList.add('hidden');adminRecoveryCodes.innerHTML=d.recovery_codes.map(c=>'<span>'+c+'</span>').join('');admin2faRecovery.classList.remove('hidden');admin2faBadge.textContent='Enabled';admin2faBadge.className='badge badge-clean';}
+async function disableAdmin2FA(){var r=await fetch('/api/admin/2fa/disable',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:adminDisablePassword.value})}),d=await r.json();if(!r.ok){adminDisableError.textContent=d.error;return;}location.reload();}
+</script>
+{% endblock %}

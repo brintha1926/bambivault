@@ -1,171 +1,524 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BambiVault — Analysis &amp; Trends</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
-  <style>
-    .edu-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:1.5rem; }
-    .edu-card {
-      background: rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.08);
-      border-radius: 12px; padding: 1.3rem; position:relative; overflow:hidden;
-    }
-    .edu-icon { font-size:1.4rem; margin-bottom:.6rem; }
-    .edu-title { font-family:var(--mono); font-size:.92rem; font-weight:700; margin-bottom:.5rem; }
-    .edu-body { font-size:.8rem; color:var(--muted,#888); line-height:1.55; }
-    .edu-accent { position:absolute; top:0; left:0; width:100%; height:3px; }
-    @media (max-width: 900px){ .edu-grid { grid-template-columns:1fr; } }
-  </style>
+{% include '_shared_head.html' %}
+<title>{% block title %}BambiVault — Security Overview{% endblock %}</title>
+{% block extra_head %}{% endblock %}
 </head>
-<body>
-<div class="grid-bg"></div>
-<nav class="navbar">
-  <div class="nav-brand">
-    <div class="brand-icon">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2L4 6v6c0 5.25 3.5 10.14 8 11.35C16.5 22.14 20 17.25 20 12V6L12 2z" fill="#00ffc8" opacity=".25" stroke="#00ffc8" stroke-width="1.5"/>
-        <path d="M9 12l2 2 4-4" stroke="#00ffc8" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </div>
-    <span class="brand-name">Bambi<span class="brand-acc">Vault</span></span>
-  </div>
-  <div class="nav-links">
-    <a href="/"><span class="ni">◈</span>Analyser</a>
-    <a href="/dashboard" class="active"><span class="ni">◉</span>Trends</a>
-    <a href="/database"><span class="ni">◫</span>Database</a>
-  </div>
-  <div class="nav-status"><span class="sdot"></span>System Online</div>
-</nav>
+<body class="font-sans text-text-primary antialiased">
 
-<main class="container">
-  <div class="dash-hdr">
-    <div>
-      <h2>Analysis &amp; Trends</h2>
-      <p class="hero-sub">Aggregated anonymous data from real submissions · No passwords stored · Public awareness view</p>
-    </div>
-  </div>
+<a class="skip-link" href="#main-content">Skip to main content</a>
 
-  <div class="dstat-row">
-    <div class="dstat">
-      <div class="dstat-label">PASSWORDS ANALYSED</div>
-      <div class="dstat-val" id="sTotal">—</div>
-      <div class="dstat-delta">All time submissions</div>
-    </div>
-    <div class="dstat">
-      <div class="dstat-label">FOUND IN BREACHES</div>
-      <div class="dstat-val danger" id="sRate">—</div>
-      <div class="dstat-delta">of all analysed passwords</div>
-    </div>
-    <div class="dstat">
-      <div class="dstat-label">AVG ENTROPY</div>
-      <div class="dstat-val" id="sEntropy">—</div>
-      <div class="dstat-delta">Shannon bits average</div>
-    </div>
-    <div class="dstat">
-      <div class="dstat-label">STRONG PASSWORDS</div>
-      <div class="dstat-val success" id="sStrong">—</div>
-      <div class="dstat-delta">Strong + Very Strong</div>
-    </div>
-  </div>
+<div id="bv-toast-stack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
 
-  <div class="dchart-row">
-    <div class="panel">
-      <div class="ptag">STRENGTH DISTRIBUTION</div>
-      <div id="distChart"></div>
-    </div>
-    <div class="panel">
-      <div class="ptag">TOP WEAKNESS PATTERNS</div>
-      <div id="patChart"></div>
-    </div>
-  </div>
+<div class="app-shell">
 
-  <div class="panel" style="margin-top:20px">
-    <div class="ptag">STAY SECURE — WHAT TO WATCH FOR</div>
-    <div class="edu-grid">
-      <div class="edu-card">
-        <div class="edu-accent" style="background:#ef4444"></div>
-        <div class="edu-icon">🎣</div>
-        <div class="edu-title">Phishing</div>
-        <div class="edu-body">
-          Attackers send fake emails or messages mimicking a trusted source —
-          your bank, university, or a colleague — to trick you into revealing
-          your password directly. No breach database can catch this; the only
-          defence is checking sender addresses carefully and never entering
-          credentials through a link you didn't navigate to yourself.
+    <div id="dashboard-drawer-overlay"
+         class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"
+         aria-hidden="true"></div>
+
+    <!-- Navigation -->
+    <aside id="primary-nav"
+           aria-label="Primary navigation"
+           aria-hidden="true"
+           class="sidebar hidden md:flex">
+        <div class="sidebar-brand">
+            <a href="{{ url_for('index') }}" class="sidebar-brand-link" aria-label="BambiVault home">
+                <span class="brand-icon"><i data-lucide="shield-check" class="w-5 h-5"></i></span>
+                <span class="brand-name">Bambi<span class="brand-acc">Vault</span></span>
+            </a>
         </div>
-      </div>
-      <div class="edu-card">
-        <div class="edu-accent" style="background:#f59e0b"></div>
-        <div class="edu-icon">🔁</div>
-        <div class="edu-title">Credential Stuffing</div>
-        <div class="edu-body">
-          When one site is breached, attackers automatically try the same
-          email+password combination across thousands of other sites. Reusing
-          a password — even a strong one — means a single breach elsewhere can
-          compromise every account where you reused it.
-        </div>
-      </div>
-      <div class="edu-card">
-        <div class="edu-accent" style="background:#10b981"></div>
-        <div class="edu-icon">🔐</div>
-        <div class="edu-title">Password Managers</div>
-        <div class="edu-body">
-          A password manager generates and stores a unique, high-entropy
-          password for every account, so you only need to remember one master
-          password. This removes the two biggest human risk factors this
-          dashboard measures: reuse and predictable patterns.
-        </div>
-      </div>
+        <nav class="sidebar-section" aria-label="Primary">
+            {% if session.get('user_id') %}
+            <a href="{{ url_for('dashboard') }}" class="sidebar-link {% if request.path == '/dashboard' %}is-active{% endif %}" {% if request.path == '/dashboard' %}aria-current="page"{% endif %}>
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Overview</span>
+            </a>
+            {% endif %}
+            <a href="{{ url_for('analyser_page') }}" class="sidebar-link {% if request.path == '/analyser' %}is-active{% endif %}" {% if request.path == '/analyser' %}aria-current="page"{% endif %}>
+                <i data-lucide="scan-line" class="w-5 h-5"></i><span>Analyser</span>
+            </a>
+            {% if session.get('user_id') %}
+            <a href="{{ url_for('vault_page') }}" class="sidebar-link {% if request.path == '/vault' %}is-active{% endif %}" {% if request.path == '/vault' %}aria-current="page"{% endif %}>
+                <i data-lucide="lock" class="w-5 h-5"></i><span>Vault</span>
+            </a>
+            <a href="{{ url_for('database') }}" class="sidebar-link {% if request.path == '/database' %}is-active{% endif %}" {% if request.path == '/database' %}aria-current="page"{% endif %}>
+                <i data-lucide="database" class="w-5 h-5"></i><span>History</span>
+            </a>
+            <a href="{{ url_for('vault_bp.settings_page') }}" class="sidebar-link {% if request.path == '/settings' %}is-active{% endif %}" {% if request.path == '/settings' %}aria-current="page"{% endif %}>
+                <i data-lucide="settings" class="w-5 h-5"></i><span>Settings</span>
+            </a>
+            {% endif %}
+        </nav>
+    </aside>
+
+    <div class="main">
+        <header class="topbar" role="banner">
+            <button class="drawer-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="primary-nav" data-drawer-toggle>
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <form class="topbar-search hidden sm:block" onsubmit="return submitGlobalSearch(event)">
+                <i data-lucide="search" class="search-icon w-4 h-4"></i>
+                <input id="globalSearch" type="search" name="bv_search_query" placeholder="Search your history — press Enter"
+                       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                       data-lpignore="true" data-form-type="other" aria-label="Search your history">
+                <button type="button" class="search-clear" aria-label="Clear search" data-search-clear>×</button>
+            </form>
+            <div class="topbar-actions">
+                {% if session.get('user_id') %}
+                <div class="relative" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
+                    <button @click="open = !open" :aria-expanded="open.toString()" aria-controls="user-menu" aria-label="Account menu" class="topbar-avatar-btn">
+                        <span class="topbar-avatar" id="navAvatar">U</span>
+                        <span class="topbar-username" id="navUsername">Member</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-text-muted"></i>
+                    </button>
+                    <div id="user-menu" x-show="open" x-transition x-cloak class="topbar-menu">
+                        <div class="topbar-menu-header">
+                            <p id="navUsernameMenu">Member</p>
+                            <small id="navEmail"></small>
+                        </div>
+                        <a href="{{ url_for('vault_bp.settings_page') }}"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
+                        <a href="{{ url_for('logout') }}" class="danger-link"><i data-lucide="log-out" class="w-4 h-4"></i>Log out</a>
+                    </div>
+                </div>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-secondary btn-sm"><i data-lucide="log-in" class="w-4 h-4"></i>Sign in</a>
+                {% endif %}
+            </div>
+        </header>
+
+        <main id="main-content" tabindex="-1" class="page-body">
+          <div class="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Security overview</h1>
+                    <p class="page-subtitle">Monitor your password health and vault activity.</p>
+                </div>
+                <a href="{{ url_for('analyser_page') }}" class="btn btn-primary">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>New analysis</span>
+                </a>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="dstat-row">
+                <div class="dstat">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="dstat-label">Total analyses</span>
+                        <div class="p-2" style="background:var(--surface-3); border-radius:var(--r)"><i data-lucide="activity" class="w-4 h-4 text-accent"></i></div>
+                    </div>
+                    <h3 id="kpiTotal" class="dstat-val skeleton" style="height:2.1rem; width:5rem;">…</h3>
+                    <p id="kpiTotalSub" class="dstat-delta">All time</p>
+                </div>
+                <div class="dstat">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="dstat-label">Breach rate</span>
+                        <div class="p-2" style="background:var(--surface-3); border-radius:var(--r)"><i data-lucide="shield-alert" class="w-4 h-4 text-danger"></i></div>
+                    </div>
+                    <h3 id="kpiBreach" class="dstat-val skeleton" style="height:2.1rem; width:4rem;">…</h3>
+                    <p id="kpiBreachSub" class="dstat-delta">Across your analyses</p>
+                </div>
+                <div class="dstat">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="dstat-label">Average entropy</span>
+                        <div class="p-2" style="background:var(--surface-3); border-radius:var(--r)"><i data-lucide="bar-chart-2" class="w-4 h-4 text-warn"></i></div>
+                    </div>
+                    <h3 class="dstat-val"><span id="kpiEntropy" class="skeleton" style="height:2.1rem; width:4rem; display:inline-block; vertical-align:middle">…</span> <span style="font-size:1rem; color:var(--text-secondary)">bits</span></h3>
+                    <p class="dstat-delta">Target: &gt; 80 bits</p>
+                </div>
+                <div class="dstat">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="dstat-label">Most common pattern</span>
+                        <div class="p-2" style="background:var(--surface-3); border-radius:var(--r)"><i data-lucide="alert-triangle" class="w-4 h-4 text-success"></i></div>
+                    </div>
+                    <h3 id="kpiPattern" class="dstat-val" style="font-size:1.05rem; line-height:1.3">…</h3>
+                    <p id="kpiPatternSub" class="dstat-delta">—</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div class="panel lg:col-span-2">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="panel-title">Strength distribution</h3>
+                        <span class="text-xs text-text-muted">All your analyses</span>
+                    </div>
+                    <div class="chart-box"><canvas id="strengthChart" aria-label="Bar chart of strength distribution across your analyses" role="img"></canvas></div>
+                </div>
+                <div class="panel">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="panel-title">Breach risk</h3>
+                    </div>
+                    <div class="chart-box-sm"><canvas id="riskChart" aria-label="Doughnut chart of breach risk distribution across your analyses" role="img"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Patterns -->
+            <div class="panel">
+                <h3 class="panel-title mb-5">Detected behaviour patterns</h3>
+                <div id="patternsList" class="space-y-5">
+                    <p class="text-sm text-text-muted">Loading…</p>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="panel">
+                <div class="flex items-start gap-3 mb-4">
+                    <div class="p-2" style="background:var(--accent-faint); border-radius:var(--r)">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-accent"></i>
+                    </div>
+                    <div>
+                        <h3 class="panel-title">Security recommendations</h3>
+                        <p class="panel-sub">Based on your combined analysis history, never your plaintext passwords.</p>
+                    </div>
+                </div>
+                <div id="overallRecommendations" class="space-y-3">
+                    <div class="skeleton" style="height:1rem"></div>
+                    <div class="skeleton" style="height:1rem; width:80%"></div>
+                </div>
+            </div>
+
+            <!-- Vault summary -->
+            <div class="panel">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="panel-title">Vault health</h3>
+                    <a href="{{ url_for('vault_page') }}" class="text-sm text-accent hover:text-accent-hover font-medium">Open vault →</a>
+                </div>
+                <div id="vaultStatus" class="text-sm text-text-secondary">
+                    <span class="skeleton" style="display:inline-block; height:1rem; width:12rem; vertical-align:middle"></span>
+                </div>
+            </div>
+
+          </div>
+        </main>
     </div>
-  </div>
-</main>
+</div>
 
 <script>
-async function load(){
-  try{
-    const r=await fetch('/api/stats');
-    const d=await r.json();
+var dashboardDrawer = (function(){
+  var sidebar = document.getElementById('primary-nav');
+  var overlay = document.getElementById('dashboard-drawer-overlay');
+  var toggle = document.querySelector('[data-drawer-toggle]');
+  var media = window.matchMedia('(min-width: 768px)');
+  var lastFocus = null;
+  var open = false;
+  var focusSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-    document.getElementById('sTotal').textContent=d.total||0;
-    document.getElementById('sRate').textContent=(d.breach_rate||0)+'%';
-    document.getElementById('sEntropy').textContent=(d.avg_entropy||0)+' bits';
+  function focusable(){ return Array.from(sidebar.querySelectorAll(focusSelector)); }
+  function syncAria(){
+    var exposed = media.matches || open;
+    sidebar.setAttribute('aria-hidden', exposed ? 'false' : 'true');
+    if (exposed) sidebar.removeAttribute('inert'); else sidebar.setAttribute('inert', '');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function show(){
+    if (media.matches) return;
+    lastFocus = document.activeElement;
+    open = true;
+    sidebar.classList.remove('hidden');
+    sidebar.classList.add('fixed', 'inset-y-0', 'left-0', 'z-40', 'w-64');
+    overlay.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    syncAria();
+    var items = focusable();
+    if (items.length) items[0].focus();
+  }
+  function close(restoreFocus){
+    if (media.matches) return;
+    open = false;
+    sidebar.classList.add('hidden');
+    sidebar.classList.remove('fixed', 'inset-y-0', 'left-0', 'z-40', 'w-64');
+    overlay.classList.add('hidden');
+    document.body.style.overflow = '';
+    syncAria();
+    if (restoreFocus !== false && lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+  }
+  function syncViewport(){
+    open = false;
+    overlay.classList.add('hidden');
+    document.body.style.overflow = '';
+    sidebar.classList.remove('fixed', 'inset-y-0', 'left-0', 'z-40', 'w-64');
+    sidebar.classList.toggle('hidden', !media.matches);
+    if (media.matches) sidebar.classList.add('md:flex');
+    syncAria();
+  }
+  toggle.addEventListener('click', function(){ open ? close() : show(); });
+  overlay.addEventListener('click', function(){ close(); });
+  sidebar.querySelectorAll('a[href]').forEach(function(link){
+    link.addEventListener('click', function(){ if (!media.matches) close(false); });
+  });
+  document.addEventListener('keydown', function(event){
+    if (!open) return;
+    if (event.key === 'Escape') { event.preventDefault(); close(); return; }
+    if (event.key !== 'Tab') return;
+    var items = focusable();
+    if (!items.length) { event.preventDefault(); return; }
+    var first = items[0], last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  });
+  if (media.addEventListener) media.addEventListener('change', syncViewport);
+  else media.addListener(syncViewport);
+  syncViewport();
+  return { open: show, close: close };
+})();
 
-    const dm={}; d.distribution.forEach(x=>dm[x.label]=x.count);
-    const strong=(dm['Strong']||0)+(dm['Very Strong']||0);
-    document.getElementById('sStrong').textContent=
-      d.total?Math.round((strong/d.total)*100)+'%':'0%';
-
-    const SORDER=['Very Weak','Weak','Medium','Strong','Very Strong'];
-    const SCOLORS=['#ef4444','#f97316','#f59e0b','#10b981','#00ffc8'];
-    document.getElementById('distChart').innerHTML=
-      SORDER.map((lbl,i)=>{
-        const cnt=dm[lbl]||0;
-        const pct=d.total?Math.round((cnt/d.total)*100):0;
-        return`<div class="brow">
-          <span class="blbl">${lbl}</span>
-          <div class="btrack">
-            <div class="bfill" style="width:${pct||2}%;background:${SCOLORS[i]}">
-              <span class="bpct">${pct}%</span>
-            </div>
-          </div>
-          <span class="bcnt">${cnt}</span>
-        </div>`;
-      }).join('');
-
-    document.getElementById('patChart').innerHTML=
-      (d.top_patterns.length?d.top_patterns:[['No data yet',0]])
-      .map(([n,c])=>`
-        <div class="pat-item">
-          <span class="pat-name">${n.replace(/_/g,' ')}</span>
-          <span class="pat-cnt">${c}</span>
-        </div>`).join('');
-
-  }catch(e){console.error(e);}
+function submitGlobalSearch(e) {
+  var q = document.getElementById('globalSearch');
+  if (!q || !q.value.trim()) return false;
+  window.location.href = '{{ url_for("database") }}?q=' + encodeURIComponent(q.value.trim());
+  return false;
 }
-load();
-setInterval(load,15000);
+
+(function() {
+  var input = document.getElementById('globalSearch');
+  var form = input && input.closest('.topbar-search');
+  var clear = form && form.querySelector('[data-search-clear]');
+  if (!input || !clear) return;
+  var sync = function() { form.classList.toggle('has-value', input.value.length > 0); };
+  input.addEventListener('input', sync);
+  clear.addEventListener('click', function() { input.value = ''; sync(); input.focus(); });
+  sync();
+})();
+
+lucide.createIcons();
+
+(async function() {
+  try {
+    var r = await fetch('/api/account/status');
+    var d = await r.json();
+    if (!d.logged_in) { window.location.href = '{{ url_for("login") }}'; return; }
+    var initial = (d.username || 'M')[0].toUpperCase();
+    var av = document.getElementById('navAvatar');     if (av) av.textContent = initial;
+    var un = document.getElementById('navUsername');   if (un) un.textContent = d.username || 'Member';
+    var um = document.getElementById('navUsernameMenu'); if (um) um.textContent = d.username || 'Member';
+    var em = document.getElementById('navEmail');       if (em) em.textContent = d.email || '';
+  } catch(e) { window.location.href = '{{ url_for("login") }}'; return; }
+})();
+
+(function() {
+  if (window.bvToast) return;
+  function ensureStack() {
+    var s = document.getElementById('bv-toast-stack');
+    if (!s) { s = document.createElement('div'); s.id = 'bv-toast-stack'; s.className='toast-stack'; s.setAttribute('aria-live','polite'); s.setAttribute('aria-atomic','false'); document.body.appendChild(s); }
+    return s;
+  }
+  function bvToast(opts) {
+    opts = opts || {};
+    var kind = opts.kind || 'info';
+    var message = opts.message || '';
+    var stack = ensureStack();
+    var t = document.createElement('div');
+    t.className = 'toast toast-' + kind;
+    var span = document.createElement('span'); span.textContent = message;
+    var close = document.createElement('button'); close.className = 'toast-close'; close.setAttribute('aria-label','Dismiss notification'); close.textContent = '×';
+    close.addEventListener('click', function(){ t.remove(); });
+    t.appendChild(span); t.appendChild(close);
+    stack.appendChild(t);
+    var timer = null;
+    function start(){ stop(); timer = setTimeout(function(){ t.remove(); }, 4000); }
+    function stop(){ if (timer) { clearTimeout(timer); timer = null; } }
+    t.addEventListener('mouseenter', stop);
+    t.addEventListener('mouseleave', start);
+    t.addEventListener('focusin', stop);
+    t.addEventListener('focusout', start);
+    start();
+  }
+  window.bvToast = bvToast;
+})();
 </script>
+
+<script>
+const STRENGTH_LABELS = ['Very Weak','Weak','Medium','Strong','Very Strong'];
+const STRENGTH_COLORS = ['#EF4444','#F97316','#F59E0B','#10B981','#14B8A6'];
+const RISK_LABELS = ['Safe','Low Risk','Moderate Risk','High Risk','Critical'];
+const RISK_COLORS  = ['#10B981','#F59E0B','#F97316','#EF4444','#8B5CF6'];
+
+function humanize(s){
+  if(!s) return 'None';
+  return s.split('_').map(function(w){ return w[0].toUpperCase() + w.slice(1); }).join(' ');
+}
+
+function renderStats(d){
+  document.getElementById('kpiTotal').textContent     = (d.total || 0).toLocaleString();
+  document.getElementById('kpiTotal').classList.remove('skeleton');
+  document.getElementById('kpiTotalSub').textContent = d.total === 0
+    ? 'No analyses yet — try the Analyser'
+    : 'All time';
+
+  var breachPct = d.breach_rate ?? 0;
+  document.getElementById('kpiBreach').textContent     = breachPct + '%';
+  document.getElementById('kpiBreach').classList.remove('skeleton');
+  document.getElementById('kpiBreachSub').textContent  = (d.breached || 0) + ' of ' + (d.total || 0) + ' matched known breaches';
+  document.getElementById('kpiBreachSub').className    = 'dstat-delta ' + (breachPct >= 20 ? 'text-danger' : 'text-text-muted');
+
+  var ent = d.avg_entropy ?? 0;
+  document.getElementById('kpiEntropy').textContent     = (ent.toFixed ? ent.toFixed(1) : ent);
+  document.getElementById('kpiEntropy').classList.remove('skeleton');
+
+  var top = (d.top_patterns || [])[0];
+  document.getElementById('kpiPattern').textContent     = top ? humanize(top[0]) : 'None';
+  document.getElementById('kpiPattern').classList.remove('skeleton');
+  document.getElementById('kpiPatternSub').textContent = top
+    ? (top[1] + ' occurrence' + (top[1] === 1 ? '' : 's'))
+    : 'No password-pattern weaknesses have been detected.';
+
+  renderStrengthChart(d.distribution || []);
+  renderRiskChart(d.risk_dist || []);
+
+  renderPatterns(d.top_patterns || [], d.total || 0);
+  renderOverallRecommendations(d.overall_ai_recommendations || []);
+}
+
+function renderOverallRecommendations(recommendations){
+  var escapeHTML = window.bvEscapeHTML;
+  var box = document.getElementById('overallRecommendations');
+  if(!recommendations.length){
+    box.innerHTML = '<p class="text-sm text-text-muted">Complete an analysis to receive an overall recommendation.</p>';
+    return;
+  }
+  box.innerHTML = recommendations.map(function(recommendation, index){
+    return '<div class="flex items-start gap-3 p-3 bg-slate-50 border border-border-subtle rounded-lg">'+
+      '<span class="w-6 h-6 rounded-full bg-accent-bg text-accent text-xs font-bold flex items-center justify-center shrink-0">'+(index+1)+'</span>'+
+      '<p class="text-sm text-text-secondary leading-relaxed break-words min-w-0">'+escapeHTML(recommendation)+'</p>'+
+    '</div>';
+  }).join('');
+}
+
+let strengthChart = null;
+function renderStrengthChart(distribution){
+  var counts = STRENGTH_LABELS.map(function(lbl){
+    var row = distribution.find(function(r){ return r.label === lbl; });
+    return row ? row.count : 0;
+  });
+  var ctx = document.getElementById('strengthChart');
+  if (!ctx || !window.Chart) return;
+  if(strengthChart) strengthChart.destroy();
+  strengthChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: STRENGTH_LABELS,
+      datasets: [{
+        data: counts,
+        backgroundColor: STRENGTH_COLORS,
+        borderRadius: 6,
+        maxBarThickness: 48,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(item){
+              var total = counts.reduce(function(a,b){return a+b;}, 0) || 1;
+              var pct = Math.round((item.parsed.y / total) * 100);
+              return item.parsed.y + ' analyses ('+pct+'%)';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 11 } } },
+        y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { color: '#94A3B8', font: { size: 11 }, precision: 0 } }
+      }
+    }
+  });
+}
+
+let riskChart = null;
+function renderRiskChart(riskDist){
+  var counts = RISK_LABELS.map(function(lbl){
+    var row = riskDist.find(function(r){ return r.label === lbl; });
+    return row ? row.count : 0;
+  });
+  var ctx = document.getElementById('riskChart');
+  if (!ctx || !window.Chart) return;
+  if(riskChart) riskChart.destroy();
+  riskChart = new Chart(ctx.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: RISK_LABELS,
+      datasets: [{
+        data: counts,
+        backgroundColor: RISK_COLORS,
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#475569', font: { size: 11 }, boxWidth: 10, boxHeight: 10, padding: 10 } },
+        tooltip: {
+          callbacks: {
+            label: function(item){
+              var total = counts.reduce(function(a,b){return a+b;}, 0) || 1;
+              var pct = Math.round((item.parsed / total) * 100);
+              return item.label + ': ' + item.parsed + ' ('+pct+'%)';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderPatterns(topPatterns, total){
+  var escapeHTML = window.bvEscapeHTML;
+  var box = document.getElementById('patternsList');
+  if(!topPatterns.length || !total){
+    box.innerHTML = '<div class="empty-state"><div class="empty-title">No patterns available</div><p class="empty-hint">Run an analysis to generate results.</p></div>';
+    return;
+  }
+  var max = topPatterns[0][1] || 1;
+  box.innerHTML = topPatterns.slice(0, 6).map(function(p){
+    var pct = Math.round((p[1] / total) * 100);
+    var barPct = Math.round((p[1] / max) * 100);
+    var isCritical = /keyboard|name|subst|dictionary/i.test(p[0]);
+    var cls = isCritical ? 'text-danger' : 'text-warn';
+    var barCls = isCritical ? 'bg-danger' : 'bg-warning';
+    return '<div>'+
+      '<div class="flex justify-between text-sm mb-1"><span class="text-text-primary font-medium">'+escapeHTML(humanize(p[0]))+'</span><span class="text-text-secondary">'+Number(p[1])+' · '+pct+'%</span></div>'+
+      '<div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full '+barCls+' rounded-full" style="width:'+barPct+'%"></div></div>'+
+    '</div>';
+  }).join('');
+}
+
+(async function bootstrap(){
+  try {
+    var r = await fetch('/api/account/status');
+    var d = await r.json();
+    if (!d.logged_in) return;
+    var v = document.getElementById('vaultStatus');
+    if (!d.vault_configured) {
+      v.innerHTML = '<span class="badge badge-w">Not configured</span> · Configure the vault to enable encrypted credential storage.';
+    } else if (d.vault_unlocked) {
+      v.innerHTML = '<span class="badge badge-clean">Unlocked</span> · The vault is unlocked for the current session.';
+    } else {
+      v.innerHTML = '<span class="badge badge-bad">Locked</span> · Unlock your vault on the <a href="/vault" class="text-accent hover:underline">Vault page</a>.';
+    }
+  } catch(e) { /* keep skeleton */ }
+
+  try {
+    var r = await fetch('/api/stats');
+    if (r.status === 401) { window.location.href = '/login'; return; }
+    var d = await r.json();
+    renderStats(d);
+  } catch(e) {
+    console.error('Stats load failed', e);
+    ['kpiTotal','kpiBreach','kpiEntropy','kpiPattern'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) { el.textContent = '—'; el.classList.remove('skeleton'); }
+    });
+    if (window.bvToast) window.bvToast({ kind: 'danger', message: 'Could not load dashboard statistics.' });
+  }
+})();
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

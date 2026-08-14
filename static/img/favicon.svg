@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="BambiVault">
+  <rect width="64" height="64" rx="16" fill="#0f172a"/>
+  <path d="M32 10 50 17v13c0 12-7.5 20.5-18 25-10.5-4.5-18-13-18-25V17l18-7Z" fill="#0d9488"/>
+  <path d="m24 31 5.2 5.2L41 24.5" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

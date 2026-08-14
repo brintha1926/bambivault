@@ -1,153 +1,177 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BambiVault — Database Records</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
-  <style>
-    .badge-profile {
-      display:inline-block; padding:.2rem .55rem; border-radius:20px;
-      font-size:.66rem; font-weight:600; white-space:nowrap;
-    }
-  </style>
-</head>
-<body>
-<div class="grid-bg"></div>
-<nav class="navbar">
-  <div class="nav-brand">
-    <div class="brand-icon">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M12 2L4 6v6c0 5.25 3.5 10.14 8 11.35C16.5 22.14 20 17.25 20 12V6L12 2z" fill="#00ffc8" opacity=".25" stroke="#00ffc8" stroke-width="1.5"/>
-        <path d="M9 12l2 2 4-4" stroke="#00ffc8" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </div>
-    <span class="brand-name">Bambi<span class="brand-acc">Vault</span></span>
-  </div>
-  <div class="nav-links">
-    <a href="/"><span class="ni">◈</span>Analyser</a>
-    <a href="/dashboard"><span class="ni">◉</span>Dashboard</a>
-    <a href="/database" class="active"><span class="ni">◫</span>Database</a>
-  </div>
-  <div class="nav-status"><span class="sdot"></span>System Online</div>
-</nav>
+{% extends "base.html" %}
+{% block title %}BambiVault — Database Records{% endblock %}
 
-<main class="container">
-  <div class="db-hdr">
+{% block content %}
+<div class="max-w-7xl mx-auto">
+
+  <div class="page-header">
     <div>
-      <h2 style="font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:.3rem">
-        Password Analysis Log
-      </h2>
-      <p class="hero-sub">Anonymised records · No plaintext passwords stored · k-Anonymity protected</p>
+      <h1 class="page-title">Analysis history</h1>
+      <p class="page-subtitle">All anonymised password analysis records associated with your account.</p>
     </div>
-    <span class="db-badge">● Live Database</span>
+    <span class="badge badge-vs">No plaintext stored</span>
   </div>
 
   <div class="toolbar">
-    <select id="strF" class="db-sel" onchange="load(1)">
+    <select id="filterStrength" class="db-sel" aria-label="Filter by strength">
       <option value="">All strengths</option>
-      <option>Very Weak</option><option>Weak</option>
-      <option>Medium</option><option>Strong</option><option>Very Strong</option>
+      <option value="Very Weak">Very Weak</option>
+      <option value="Weak">Weak</option>
+      <option value="Medium">Medium</option>
+      <option value="Strong">Strong</option>
+      <option value="Very Strong">Very Strong</option>
     </select>
-    <select id="brF" class="db-sel" onchange="load(1)">
-      <option value="">All breach status</option>
+    <select id="filterBreach" class="db-sel" aria-label="Filter by breach exposure">
+      <option value="">Breach: any</option>
       <option value="yes">Breached only</option>
       <option value="no">Not breached</option>
     </select>
-    <select id="profF" class="db-sel" onchange="load(1)">
-      <option value="">All behaviour profiles</option>
-      <option value="Keyboard-Walk Type">Keyboard-Walk Type</option>
-      <option value="Name+Year Type">Name+Year Type</option>
-      <option value="Substitution Type">Substitution Type</option>
-      <option value="Dictionary-Word Type">Dictionary-Word Type</option>
+    <select id="filterProfile" class="db-sel" aria-label="Filter by behaviour profile">
+      <option value="">All profiles</option>
       <option value="Clean">Clean</option>
+      <option value="Keyboard-Walk Type">Keyboard-Walk</option>
+      <option value="Name+Year Type">Name+Year</option>
+      <option value="Substitution Type">Substitution</option>
+      <option value="Dictionary-Word Type">Dictionary-Word</option>
     </select>
-    <div class="db-tot" id="dbTot">0 records</div>
+    <button id="clearFilters" class="btn btn-ghost btn-sm" type="button">Clear filters</button>
+    <div class="db-tot"><span id="recordCount">0</span> total records</div>
   </div>
 
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th>#</th>
-          <th>Hash Prefix</th>
-          <th>Strength</th>
-          <th>Behaviour Profile</th>
-          <th>Breach Risk</th>
-          <th>Pattern Flags</th>
-          <th>Entropy</th>
-          <th>Breached</th>
-          <th>Submitted At</th>
+          <th scope="col">Date</th>
+          <th scope="col">Strength</th>
+          <th scope="col">Entropy</th>
+          <th scope="col">Profile</th>
+          <th scope="col">Patterns</th>
+          <th scope="col">Breach</th>
         </tr>
       </thead>
-      <tbody id="tbody"></tbody>
+      <tbody id="dbBody">
+        <tr><td colspan="6" class="db-empty">
+          <i data-lucide="database" class="w-10 h-10"></i>
+          <div>Loading…</div>
+        </td></tr>
+      </tbody>
     </table>
-    <div class="pagination" id="pages"></div>
   </div>
-</main>
 
+  <div class="pagination">
+    <button id="prevPage" class="pgb" type="button">← Previous</button>
+    <span id="pageInfo" class="text-sm text-text-muted self-center">Page 1</span>
+    <button id="nextPage" class="pgb" type="button">Next →</button>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-const SBADGE={
-  'Very Weak':'bvw','Weak':'bw','Medium':'bm',
-  'Strong':'bs','Very Strong':'bvs'
-};
-const RBADGE={
-  'Safe':'r-safe','Low Risk':'r-low','Moderate Risk':'r-mod',
-  'High Risk':'r-high','Critical':'r-crit','Unknown':'r-low'
-};
-const PCOLORS={
-  'Keyboard-Walk Type':'#ef4444','Name+Year Type':'#f97316',
-  'Substitution Type':'#f59e0b','Dictionary-Word Type':'#a855f7','Clean':'#10b981'
+const STRENGTH_BADGE = {
+  'Very Weak':  'badge-vw',
+  'Weak':       'badge-w',
+  'Medium':     'badge-m',
+  'Strong':     'badge-s',
+  'Very Strong':'badge-vs'
 };
 
-async function load(pg=1){
-  const sf=document.getElementById('strF').value;
-  const bf=document.getElementById('brF').value;
-  const pf=document.getElementById('profF').value;
-  let url=`/api/records?page=${pg}`;
-  if(sf)url+=`&strength=${encodeURIComponent(sf)}`;
-  if(bf)url+=`&breach=${bf}`;
-  if(pf)url+=`&profile=${encodeURIComponent(pf)}`;
-  const r=await fetch(url);
-  const d=await r.json();
+let currentPage = 1;
+let totalPages = 1;
 
-  document.getElementById('dbTot').textContent=d.total+' records';
+async function loadDatabase(){
+  const params = new URLSearchParams({ page: currentPage, per_page: 15 });
+  var strength = document.getElementById('filterStrength').value;
+  var breach = document.getElementById('filterBreach').value;
+  var profile = document.getElementById('filterProfile').value;
+  if(strength) params.set('strength', strength);
+  if(breach) params.set('breach', breach);
+  if(profile) params.set('profile', profile);
+  // Optional q= (from global search)
+  var q = new URLSearchParams(window.location.search).get('q');
+  if (q) params.set('q', q);
 
-  document.getElementById('tbody').innerHTML=
-    d.records.map(r=>{
-      const prof = r.behaviour_profile || 'Clean';
-      const pc = PCOLORS[prof] || '#888';
-      return `
-      <tr>
-        <td class="mono dim sm">#${String(r.id).padStart(4,'0')}</td>
-        <td class="mono dim sm">${r.hash_prefix}<span style="opacity:.35">*****</span></td>
-        <td><span class="badge ${SBADGE[r.strength_label]||'bm'}">${r.strength_label}</span></td>
-        <td><span class="badge-profile" style="background:${pc}22;color:${pc};border:1px solid ${pc}44">${prof}</span></td>
-        <td><span class="badge ${RBADGE[r.breach_risk]||'r-low'}">${r.breach_risk}</span></td>
-        <td class="dim sm">${r.pattern_flags}</td>
-        <td class="mono sm">${r.entropy}</td>
-        <td style="text-align:center;font-size:1rem">
-          ${r.breach_exposed
-            ?'<span style="color:#ef4444">✕</span>'
-            :'<span style="color:#10b981">✓</span>'}
-        </td>
-        <td class="mono dim sm">${r.submitted_at}</td>
-      </tr>`;
-    }).join('')||`<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2.5rem;font-size:.85rem">No records match this filter.</td></tr>`;
+  var body = document.getElementById('dbBody');
+  body.innerHTML = '<tr><td colspan="6" class="db-empty"><div class="skeleton" style="height:1.5rem;margin-bottom:.5rem"></div><div class="skeleton" style="height:1.5rem;margin-bottom:.5rem"></div><div class="skeleton" style="height:1.5rem"></div></div></td></tr>';
 
-  const pg2=document.getElementById('pages');
-  pg2.innerHTML='';
-  for(let i=1;i<=d.pages;i++){
-    const b=document.createElement('button');
-    b.className='pgb'+(i===pg?' cur':'');
-    b.textContent=i;
-    b.onclick=()=>load(i);
-    pg2.appendChild(b);
+  try{
+    var r = await fetch('/api/records?' + params);
+    if(r.status === 401){ window.location.href = '/login'; return; }
+    var d = await r.json();
+    renderDatabase(d);
+  }catch(e){
+    body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-title">Could not load records</div><p class="empty-hint">Check your network connection and try again.</p></div></td></tr>';
   }
 }
-load();
-setInterval(()=>load(1),8000);
+
+function renderDatabase(d){
+  var escapeHTML = window.bvEscapeHTML;
+  var records = d.records || [];
+  totalPages = d.pages || 1;
+  currentPage = d.page || 1;
+
+  document.getElementById('recordCount').textContent = d.total || 0;
+  document.getElementById('pageInfo').textContent = 'Page ' + currentPage + ' of ' + (totalPages || 1);
+  document.getElementById('prevPage').disabled = currentPage <= 1;
+  document.getElementById('nextPage').disabled = currentPage >= totalPages;
+
+  if(!records.length){
+    document.getElementById('dbBody').innerHTML = '<tr><td colspan="6"><div class="empty-state">'+
+      '<svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/></svg>'+
+      '<div class="empty-title">No records match your filters</div>'+
+      '<p class="empty-hint">Try clearing the filters, or run a new analysis from the Analyser page.</p>'+
+      '<div class="empty-cta"><a href="/analyser" class="btn btn-primary btn-sm">Run an analysis</a></div>'+
+    '</div></td></tr>';
+    lucide.createIcons();
+    return;
+  }
+
+  document.getElementById('dbBody').innerHTML = records.map(function(r){
+    var patterns = (r.pattern_flags && r.pattern_flags !== 'none_detected')
+      ? r.pattern_flags.split(',').map(function(p){return p.trim();}).filter(Boolean)
+          .map(function(p){return '<span class="badge badge-risk mr-1">'+escapeHTML(p.replace(/_/g,' '))+'</span>';}).join('')
+      : '<span class="text-text-muted text-xs">None</span>';
+    var breach = r.breach_exposed
+      ? '<span class="badge badge-risk">'+r.breach_risk+'</span>'
+      : '<span class="badge badge-clean">Clean</span>';
+    var badgeCls = STRENGTH_BADGE[r.strength_label] || 'badge-m';
+    return '<tr>'+
+      '<td>'+escapeHTML(r.submitted_at)+'</td>'+
+      '<td><span class="badge '+badgeCls+'">'+escapeHTML(r.strength_label)+'</span></td>'+
+      '<td class="mono">'+Number(r.entropy).toFixed(2)+'</td>'+
+      '<td>'+escapeHTML(r.behaviour_profile)+'</td>'+
+      '<td>'+patterns+'</td>'+
+      '<td>'+breach+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function changePage(delta){
+  var next = currentPage + delta;
+  if(next < 1 || next > totalPages) return;
+  currentPage = next;
+  loadDatabase();
+}
+
+function clearFilters(){
+  document.getElementById('filterStrength').value = '';
+  document.getElementById('filterBreach').value = '';
+  document.getElementById('filterProfile').value = '';
+  currentPage = 1;
+  // Also strip q from the URL
+  var u = new URL(window.location.href); u.searchParams.delete('q'); window.history.replaceState({}, '', u.toString());
+  loadDatabase();
+}
+
+document.getElementById('filterStrength').addEventListener('change', function(){ currentPage = 1; loadDatabase(); });
+document.getElementById('filterBreach').addEventListener('change', function(){ currentPage = 1; loadDatabase(); });
+document.getElementById('filterProfile').addEventListener('change', function(){ currentPage = 1; loadDatabase(); });
+document.getElementById('clearFilters').addEventListener('click', clearFilters);
+document.getElementById('prevPage').addEventListener('click', function(){ changePage(-1); });
+document.getElementById('nextPage').addEventListener('click', function(){ changePage(1); });
+
+loadDatabase();
 </script>
-</body>
-</html>
+{% endblock %}

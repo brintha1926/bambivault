@@ -1,0 +1,64 @@
+{# Shared document dependencies. #}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.x.x/dist/cdn.min.js"></script>
+<script>
+  window.tailwind = window.tailwind || {};
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          'bg-card': '#FFFFFF', 'bg-subtle': '#F8FAFC', 'border-subtle': '#E2E8F0',
+          'text-primary': '#0F172A', 'text-secondary': '#475569', 'text-muted': '#94A3B8',
+          'accent': '#0D9488', 'accent-hover': '#0F766E', 'accent-bg': '#F0FDFA',
+          'success': '#10B981', 'warning': '#F59E0B', 'danger': '#EF4444', 'critical': '#8B5CF6',
+        },
+        fontFamily: { 'sans': ['Inter', 'sans-serif'], 'mono': ['JetBrains Mono', 'monospace'] },
+        boxShadow: {
+          'card': '0 1px 3px 0 rgba(0,0,0,0.05), 0 1px 2px 0 rgba(0,0,0,0.03)',
+          'card-hover': '0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.03)'
+        }
+      }
+    }
+  };
+</script>
+<style>
+  body { background-color: #F8FAFC; }
+  [x-cloak] { display: none !important; }
+</style>
+<script>
+  (function () {
+    window.bvEscapeHTML = function (value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function (character) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character];
+      });
+    };
+    var nativeFetch = window.fetch;
+    window.fetch = function (input, init) {
+      init = init || {};
+      var method = String(init.method || 'GET').toUpperCase();
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+        var headers = new Headers(init.headers || {});
+        headers.set('X-CSRF-Token', document.querySelector('meta[name="csrf-token"]').content);
+        init.headers = headers;
+      }
+      return nativeFetch.call(this, input, init);
+    };
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('form[method="POST"], form[method="post"]').forEach(function (form) {
+        if (form.querySelector('input[name="csrf_token"]')) return;
+        var input = document.createElement('input');
+        input.type = 'hidden'; input.name = 'csrf_token';
+        input.value = document.querySelector('meta[name="csrf-token"]').content;
+        form.appendChild(input);
+      });
+    });
+  })();
+</script>

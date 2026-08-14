@@ -1,33 +1,4 @@
-"""
-breach.py — BambiVault Custom Breach Detection Module
-=======================================================
-Project : BambiVault — An Interactive System for Evaluating
-          Password Behaviour and Security Awareness Among University Students
-Author  : Brintha
-
-
-What makes this module custom-developed:
-------------------------------------------------------------------
-1. LOCAL PATTERN DATABASE  — a built-in dictionary of commonly breached
-   password structures. Passwords matching these patterns are flagged
-   BEFORE the API is even called, providing instant feedback without
-   any network dependency.
-
-2. COMPOSITE RISK SCORING — the final breach risk score is computed from
-   BOTH the HIBP API exposure count AND local pattern matching results.
-   This means a password can be flagged as high risk even if it has not
-   yet appeared in a known breach but matches a known dangerous structure.
-
-3. CUSTOM 5-TIER RISK ENGINE — maps raw exposure count to labelled risk
-   tiers (Safe / Low Risk / Moderate Risk / High Risk / Critical) with
-   configurable thresholds. This classification logic is entirely custom.
-
-4. RESULT CACHE — reduces redundant API calls with configurable TTL.
-
-5. RATE LIMITER — prevents API abuse with a per-prefix call tracker.
-
-6. BREACH AUDIT LOG — every check is recorded with timestamp and outcome.
-"""
+"""Password breach lookup, caching, pattern detection, and risk scoring."""
 
 import hashlib
 import time
@@ -35,14 +6,16 @@ import re
 import os
 import sqlite3
 import requests
+import logging
 from functools import wraps
 from datetime import datetime
 from collections import defaultdict
 
 
-# =============================================================================
-# CUSTOMISATION SECTION 
-# =============================================================================
+logger = logging.getLogger('bambivault.breach')
+
+
+# Breach service and risk configuration
 
 # API settings
 HIBP_API_URL        = "https://api.pwnedpasswords.com/range/{prefix}"
@@ -55,7 +28,6 @@ CACHE_EXPIRY_SECONDS = 300
 RATE_LIMIT_MAX   = 5
 RATE_LIMIT_WINDOW = 60
 
-# CUSTOMISE: Adjust risk thresholds based on your own risk model
 # Format: (min_count, max_count, label, score_0_to_100)
 RISK_THRESHOLDS = [
     (0,       0,           "Safe",          0),
@@ -73,7 +45,6 @@ RISK_COLOURS = {
     "Critical":      "#a855f7",
 }
 
-# CUSTOMISE: Edit advice messages per risk level
 RISK_ADVICE = {
     "Safe": (
         "No exposure found in known breach databases. "
@@ -100,15 +71,9 @@ RISK_ADVICE = {
 }
 
 
-# =============================================================================
-# LOCAL PATTERN DATABASE
-# Custom-developed component — independent of HIBP API
-# =============================================================================
+# Local pattern database
 
-# Exact commonly breached passwords — seeded with a small hardcoded set,
-# then expanded at import time with the public SecLists top-10k common
-# password list (same file used for ML labeling in generate_training_data_v3.py).
-# CUSTOMISE: Extend this list with institution-specific common passwords
+# The bundled set is extended from the local common-password dataset.
 LOCAL_KNOWN_BREACHED = {
     "password", "123456", "123456789", "qwerty", "abc123",
     "password1", "iloveyou", "admin", "letmein", "monkey",
@@ -118,7 +83,6 @@ LOCAL_KNOWN_BREACHED = {
     "qwerty123", "111111", "1234567", "1234567890", "000000",
 }
 
-# CUSTOMISE: path to the SecLists-style top-10k common password list
 COMMON_LIST_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                  "data", "top_10k_common.txt")
 
@@ -213,14 +177,7 @@ def _run_local_checks(password: str) -> dict:
     }
 
 
-# =============================================================================
-# CACHE AND RATE LIMITER
-# =============================================================================
-#
-# The breach result cache is now persistent (SQLite-backed) instead of a
-# plain in-memory dict. This means the cache survives Flask restarts during
-# development — previously, restarting the server wiped everything and the
-# next lookups all had to hit the HIBP API again.
+# Persistent breach cache and request throttling
 
 import json as _json
 
@@ -241,7 +198,7 @@ def _cache_db_connect():
             first_seen REAL
         )
     """)
-    # Migration for cache DBs created before first_seen existed
+    # Compatibility with cache databases created before first_seen.
     try:
         conn.execute("ALTER TABLE breach_cache ADD COLUMN first_seen REAL")
     except sqlite3.OperationalError:
@@ -320,12 +277,7 @@ def get_breach_age(prefix: str) -> dict:
     return {"first_seen": None, "days_ago": None, "cached_at": None}
 
 
-# =============================================================================
-# HIBP API QUERY
-# =============================================================================
-#
-# RETRY WITH BACKOFF
-# "error"/"timeout" results during live demos on shaky connections.
+# HIBP request retry policy
 
 RETRY_MAX_RETRIES = 2
 RETRY_BASE_DELAY   = 1
@@ -334,12 +286,7 @@ RETRY_MAX_DELAY    = 5
 
 def retry_with_backoff(max_retries=RETRY_MAX_RETRIES, base_delay=RETRY_BASE_DELAY,
                         max_delay=RETRY_MAX_DELAY):
-    """
-    Decorator for retrying API-calling functions with exponential backoff.
-    Retries when the wrapped function returns a dict whose "status" isn't
-    "ok", or when it raises. Gives up after max_retries and returns whatever
-    the last attempt produced (or a failure placeholder on repeated errors).
-    """
+    """Retry unsuccessful API calls with exponential backoff."""
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -376,48 +323,35 @@ def _query_hibp(prefix: str) -> dict:
                 if len(parts) == 2:
                     hashes[parts[0]] = int(parts[1])
             return {"status": "ok", "hashes": hashes}
+        logger.warning('HIBP returned HTTP %s', r.status_code)
         return {"status": f"http_{r.status_code}", "hashes": {}}
     except requests.exceptions.Timeout:
+        logger.warning('HIBP request timed out')
         return {"status": "timeout", "hashes": {}}
+    except requests.exceptions.RequestException as exc:
+        logger.warning('HIBP request failed: %s', exc)
+        return {"status": "error", "hashes": {}}
     except Exception:
+        logger.exception('Unexpected HIBP response-processing failure')
         return {"status": "error", "hashes": {}}
 
 
-# =============================================================================
-# COMPOSITE RISK ENGINE
-# Custom-developed — combines API result + local pattern analysis
-# =============================================================================
+# Composite risk scoring
 
 def _compute_composite_risk(api_count: int, local_boost: int,
                              is_locally_known: bool) -> tuple:
-    """
-    Computes the final risk classification from multiple signals:
-      - api_count:        raw HIBP exposure count
-      - local_boost:      score from local pattern matching (0–60)
-      - is_locally_known: exact match in local known-breached database
-
-    This composite approach means:
-    - A password with 0 API hits but dangerous patterns → still flagged
-    - A password with high API hits but clean patterns → accurately classified
-    - A locally known password → at minimum High Risk regardless of API count
-
-    Returns: (risk_label, risk_score, colour, advice)
-    """
-    # Start from API-based tier
+    """Combine breach prevalence and local-pattern risk signals."""
     base_score = 0
     for min_c, max_c, label, score in RISK_THRESHOLDS:
         if min_c <= api_count <= max_c:
             base_score = score
             break
 
-    # Apply local boost — patterns add to the raw API score
     composite = min(100, base_score + (local_boost * 0.5))
 
-    # Locally known passwords are always at least High Risk
     if is_locally_known:
         composite = max(composite, 75)
 
-    # Map composite score back to label
     if composite == 0:
         label = "Safe"
     elif composite <= 30:
@@ -437,32 +371,15 @@ def _compute_composite_risk(api_count: int, local_boost: int,
     )
 
 
-# =============================================================================
-# PUBLIC INTERFACE
-# =============================================================================
+# Breach assessment interface
 
 def check_breach(password: str) -> dict:
-    """
-    Main breach detection function called by app.py.
-
-    Process:
-      1. Run local pattern checks (offline, instant)
-      2. Check rate limiter
-      3. Check cache
-      4. Query HIBP API (k-Anonymity — only hash prefix sent)
-      5. Local suffix match (full hash never sent to server)
-      6. Composite risk scoring (API + local patterns combined)
-      7. Return full result dict
-
-    Returns dict with all fields needed by the frontend and database.
-    """
+    """Assess local patterns and known breach exposure."""
     if not password:
         return _error_result("empty_password", "XXXXX")
 
-    # Step 1 — Local checks (always run, no network needed)
     local = _run_local_checks(password)
 
-    # Step 2 — Hash computation
     full_hash = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
     prefix    = full_hash[:5]
     suffix    = full_hash[5:]
@@ -561,7 +478,7 @@ def _error_result(status: str, prefix: str) -> dict:
         "risk_label":     "Unknown",
         "risk_score":     0,
         "risk_colour":    "#888888",
-        "risk_advice":    "Breach check could not be completed. Please try again.",
+        "risk_advice":    "The breach check is temporarily unavailable. Try again later.",
         "hash_prefix":    prefix,
         "api_status":     status,
         "local_patterns": [],

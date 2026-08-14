@@ -1,0 +1,202 @@
+{% extends "public_base.html" %}
+{% block title %}BambiVault — Sign in{% endblock %}
+
+{% block public_nav_links %}
+  <a href="{{ url_for('index') }}">Home</a>
+  <a href="{{ url_for('register') }}">Create account</a>
+{% endblock %}
+
+{% block public_content %}
+<div class="auth-shell">
+  <div class="auth-card auth-card-login" role="region" aria-labelledby="login-title">
+    {% if request.args.get('verification') == 'required' %}
+    <div class="alert alert-success" role="status">Account created. Verify your email before signing in.</div>
+    {% endif %}
+
+    <div id="stepPassword">
+      <div class="auth-eyebrow">Sign in</div>
+      <h1 class="auth-title" id="login-title">Welcome back</h1>
+      <p class="auth-sub">Sign in to access your dashboard, history, and vault.</p>
+
+      <div class="alert alert-danger hidden" id="formError" role="alert"></div>
+      <div class="auth-status-card hidden" id="verificationHelp" role="status">
+        <span class="auth-status-icon"><i data-lucide="mail" aria-hidden="true"></i></span>
+        <div><strong>Email verification required</strong><p>Request a new verification email using the address or username above.</p><button class="btn btn-ghost btn-sm mt-2" type="button" id="resendVerificationBtn">Resend verification email</button></div>
+      </div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label class="field-label" for="identifier">Email or username</label>
+          <input class="input" type="text" id="identifier" name="identifier" required autocomplete="username" autofocus aria-describedby="identifier-hint">
+          <p class="field-hint" id="identifier-hint">Use the email or username you signed up with.</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="password">Password</label>
+          <div class="input-with-action">
+            <input class="input" type="password" id="password" name="password" required autocomplete="current-password" data-form-type="password">
+            <button type="button" class="input-action" data-toggle-pw="password" aria-label="Show password" aria-pressed="false">Show</button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" id="submitBtn">Sign in</button>
+      </form>
+
+      <p class="auth-link">
+        <a href="{{ url_for('vault_bp.forgot_password_page') }}">Forgot your password?</a>
+      </p>
+      <p class="auth-link">
+        No account? <a href="{{ url_for('register') }}">Register</a>
+      </p>
+    </div>
+
+    <div id="step2FA" class="hidden" role="region" aria-labelledby="twofa-title">
+      <div class="auth-eyebrow">Two-factor</div>
+      <h1 class="auth-title" id="twofa-title">Enter your code</h1>
+      <p class="auth-sub">Open your authenticator app and enter the 6-digit code, or use a recovery code.</p>
+
+      <div class="alert alert-danger hidden" id="twofaError" role="alert"></div>
+
+      <form id="twofaForm" novalidate>
+        <div class="field">
+          <label class="field-label" for="twofaToken">6-digit code</label>
+          <input class="input" type="text" id="twofaToken" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" autofocus aria-describedby="twofa-hint">
+          <p class="field-hint" id="twofa-hint">Enter the code from your authenticator application.</p>
+        </div>
+        <div class="divider">— or —</div>
+        <div class="field">
+          <label class="field-label" for="recoveryCode">Recovery code</label>
+          <input class="input" type="text" id="recoveryCode" placeholder="e.g. A1B2C3D4" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="recovery-hint">
+          <p class="field-hint" id="recovery-hint">One of the codes you saved when enabling 2FA.</p>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" id="twofaSubmitBtn">Verify</button>
+      </form>
+
+      <p class="auth-link">
+        <a href="#" onclick="cancelTwoFA(); return false;">Back to sign in</a>
+      </p>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  // Show / hide password toggle
+  document.querySelectorAll('[data-toggle-pw]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = btn.getAttribute('data-toggle-pw');
+      var input = document.getElementById(id);
+      if (!input) return;
+      var showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.setAttribute('aria-pressed', String(!showing));
+      btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+      btn.textContent = showing ? 'Show' : 'Hide';
+    });
+  });
+})();
+
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var errBox = document.getElementById('formError');
+  var btn = document.getElementById('submitBtn');
+  errBox.classList.add('hidden');
+  errBox.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  try {
+    var r = await fetch('/api/account/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        identifier: document.getElementById('identifier').value.trim(),
+        password: document.getElementById('password').value
+      })
+    });
+    var d = await r.json();
+    if (!r.ok) {
+      errBox.textContent = d.error || 'Sign-in failed. Verify your credentials and try again.';
+      errBox.classList.remove('hidden');
+      document.getElementById('verificationHelp').classList.toggle('hidden', !d.verification_required);
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      return;
+    }
+    if (d.requires_2fa) {
+      document.getElementById('stepPassword').classList.add('hidden');
+      document.getElementById('step2FA').classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      return;
+    }
+    window.location.href = '{{ url_for("dashboard") }}';
+  } catch (err) {
+    errBox.textContent = 'The request could not be completed. Please try again.';
+    errBox.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+});
+
+document.getElementById('resendVerificationBtn').addEventListener('click', async function(){
+  var btn = this;
+  var identifier = document.getElementById('identifier').value.trim();
+  if (!identifier) {
+    document.getElementById('formError').textContent = 'Enter your email address or username first.';
+    document.getElementById('formError').classList.remove('hidden');
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    await fetch('/api/account/resend-verification', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({identifier:identifier})});
+    if (window.bvToast) window.bvToast({kind:'success', message:'If the account requires verification, a new email has been sent.'});
+  } finally {
+    btn.disabled = false; btn.textContent = 'Resend verification email';
+  }
+});
+
+document.getElementById('twofaForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var errBox = document.getElementById('twofaError');
+  var btn = document.getElementById('twofaSubmitBtn');
+  errBox.classList.add('hidden');
+  errBox.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+
+  var token = document.getElementById('twofaToken').value.trim();
+  var recovery_code = document.getElementById('recoveryCode').value.trim();
+
+  try {
+    var r = await fetch('/api/account/login/2fa-verify', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ token: token, recovery_code: recovery_code })
+    });
+    var d = await r.json();
+    if (!r.ok) {
+      errBox.textContent = d.error || 'The verification code is invalid or has expired.';
+      errBox.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Verify';
+      return;
+    }
+    window.location.href = '{{ url_for("dashboard") }}';
+  } catch (err) {
+    errBox.textContent = 'The request could not be completed. Please try again.';
+    errBox.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Verify';
+  }
+});
+
+function cancelTwoFA() {
+  document.getElementById('step2FA').classList.add('hidden');
+  document.getElementById('stepPassword').classList.remove('hidden');
+  document.getElementById('twofaToken').value = '';
+  document.getElementById('recoveryCode').value = '';
+}
+</script>
+{% endblock %}

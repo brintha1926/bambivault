@@ -1,0 +1,5 @@
+# Dev-only dependencies — not needed in production/Docker image.
+# Install with: pip install -r requirements.txt -r requirements-dev.txt
+
+pytest==8.3.4
+mypy==1.14.1

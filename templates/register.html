@@ -1,0 +1,118 @@
+{% extends "public_base.html" %}
+{% block title %}BambiVault — Create your account{% endblock %}
+
+{% block public_nav_links %}
+  <a href="{{ url_for('index') }}">Home</a>
+  <a href="{{ url_for('login') }}">Sign in</a>
+{% endblock %}
+
+{% block public_content %}
+<div class="auth-shell">
+  <div class="auth-card" role="region" aria-labelledby="register-title">
+    <div class="auth-eyebrow">Register</div>
+    <h1 class="auth-title" id="register-title">Create your account</h1>
+    <p class="auth-sub">Create an account to access analysis history and encrypted vault features.</p>
+
+    <div class="alert alert-danger hidden" id="formError" role="alert"></div>
+
+    <form id="registerForm" novalidate>
+      <div class="field">
+        <label class="field-label" for="username">Username</label>
+        <input class="input" type="text" id="username" name="username" required autocomplete="username" autofocus aria-describedby="username-hint">
+        <p class="field-hint" id="username-hint">Visible to you and authorised administrators.</p>
+      </div>
+      <div class="field">
+        <label class="field-label" for="email">Email</label>
+        <input class="input" type="email" id="email" name="email" required autocomplete="email" aria-describedby="email-hint">
+        <p class="field-hint" id="email-hint">You'll receive a verification link.</p>
+      </div>
+      <div class="field">
+        <label class="field-label" for="password">Password</label>
+        <div class="input-with-action">
+          <input class="input" type="password" id="password" name="password" minlength="8" required autocomplete="new-password" data-form-type="password" data-lpignore="true" aria-describedby="password-hint">
+          <button type="button" class="input-action" data-toggle-pw="password" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
+        <p class="field-hint" id="password-hint">Minimum 8 characters.</p>
+      </div>
+      <div class="field">
+        <label class="field-label" for="confirmPassword">Confirm password</label>
+        <div class="input-with-action">
+          <input class="input" type="password" id="confirmPassword" name="confirm_password" minlength="8" required autocomplete="new-password" data-form-type="password" data-lpignore="true">
+          <button type="button" class="input-action" data-toggle-pw="confirmPassword" aria-label="Show confirm password" aria-pressed="false">Show</button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit" id="submitBtn">Create account</button>
+    </form>
+
+    <p class="auth-link">
+      Already have an account? <a href="{{ url_for('login') }}">Sign in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  document.querySelectorAll('[data-toggle-pw]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = btn.getAttribute('data-toggle-pw');
+      var input = document.getElementById(id);
+      if (!input) return;
+      var showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.setAttribute('aria-pressed', String(!showing));
+      btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+      btn.textContent = showing ? 'Show' : 'Hide';
+    });
+  });
+})();
+
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  var errBox = document.getElementById('formError');
+  var btn = document.getElementById('submitBtn');
+  errBox.classList.add('hidden');
+  errBox.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Creating account…';
+
+  var password = document.getElementById('password').value;
+  var confirmPassword = document.getElementById('confirmPassword').value;
+  if (password !== confirmPassword) {
+    errBox.textContent = 'Passwords do not match.';
+    errBox.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Create account';
+    return;
+  }
+
+  try {
+    var r = await fetch('/api/account/register', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        email: document.getElementById('email').value.trim(),
+        username: document.getElementById('username').value.trim(),
+        password: password,
+        confirm_password: confirmPassword
+      })
+    });
+    var d = await r.json();
+    if (!r.ok) {
+      errBox.textContent = d.error || 'Registration could not be completed. Please try again.';
+      errBox.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Create account';
+      return;
+    }
+    window.location.href = '{{ url_for("login") }}?verification=required';
+  } catch (err) {
+    errBox.textContent = 'The request could not be completed. Please try again.';
+    errBox.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Create account';
+  }
+});
+</script>
+{% endblock %}

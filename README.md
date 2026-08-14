@@ -130,10 +130,10 @@ flask --app app bootstrap
 The Docker image starts Gunicorn automatically and uses the platform-provided `PORT`. For a native Python deployment, start the workers with:
 
 ```bash
-gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --timeout 60 app:app
+gunicorn --bind 0.0.0.0:${PORT:-5000} --workers ${WEB_CONCURRENCY:-1} --threads ${GUNICORN_THREADS:-4} --timeout 60 app:app
 ```
 
-Database migrations must not run independently inside each worker.
+The single-worker default prevents the in-memory model from being duplicated on smaller instances. Increase `WEB_CONCURRENCY` only when the deployment has sufficient memory. Database migrations must not run independently inside each worker.
 
 ## Repository structure
 

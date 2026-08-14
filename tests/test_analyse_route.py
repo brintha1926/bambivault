@@ -47,6 +47,12 @@ def test_health_endpoint_reports_ok(client):
     assert resp.get_json()["status"] == "ok"
 
 
+def test_render_health_endpoint_reports_ok(client):
+    resp = client.get("/healthz")
+    assert resp.status_code == 200
+    assert resp.get_json()["status"] == "ok"
+
+
 def test_strengthen_returns_three_distinct_variants(client):
     original = "amy"
     resp = client.post("/strengthen", json={"password": original})

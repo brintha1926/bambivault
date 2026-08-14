@@ -404,6 +404,7 @@ def vault_page():
 
 
 @app.route('/health')
+@app.route('/healthz')
 def health():
     """Report application and database readiness."""
     db_ok = True

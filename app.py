@@ -48,10 +48,14 @@ log_handler = RotatingFileHandler('logs/bambivault.log', maxBytes=1_000_000, bac
 log_handler.setFormatter(logging.Formatter(
     '%(asctime)s | %(levelname)s | %(message)s', datefmt='%Y-%m-%d %H:%M:%S'
 ))
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(log_handler.formatter)
 
 logger = logging.getLogger('bambivault')
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
+logger.addHandler(console_handler)
+logger.propagate = False
 
 
 # APP & CONFIG
@@ -939,7 +943,7 @@ def api_admin_stats():
     stats = _compute_admin_stats(start_dt, end_dt)
     stats['institutional_insight'] = _generate_institutional_insight(stats)
 
-    day_expr = func.strftime('%Y-%m-%d', PasswordLog.submitted_at)
+    day_expr = func.date(PasswordLog.submitted_at)
     trend_q = apply_date_filter(
         db.session.query(
             day_expr.label('day'),
@@ -947,9 +951,16 @@ def api_admin_stats():
             func.sum(func.cast(PasswordLog.breach_exposed, db.Integer)).label('breached')
         ),
         start_dt, end_dt
-    ).group_by('day').order_by('day').limit(60).all()
+    ).group_by(day_expr).order_by(day_expr).limit(60).all()
 
-    stats['breach_trend']  = [{'day': r[0], 'total': r[1], 'breached': r[2] or 0} for r in trend_q]
+    stats['breach_trend'] = [
+        {
+            'day': r[0].isoformat() if hasattr(r[0], 'isoformat') else str(r[0]),
+            'total': r[1],
+            'breached': r[2] or 0,
+        }
+        for r in trend_q
+    ]
     stats['cache_info']    = get_cache_stats()
     stats['range_applied'] = {'start': start_dt.strftime('%Y-%m-%d') if start_dt else None,
                                'end':   end_dt.strftime('%Y-%m-%d') if end_dt else None}

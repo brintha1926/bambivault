@@ -7,7 +7,11 @@ import smtplib
 from email.mime.text import MIMEText
 
 import requests
+from dotenv import load_dotenv
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+
+
+load_dotenv()
 
 
 logger = logging.getLogger('bambivault')
@@ -36,7 +40,11 @@ def _recipient_reference(to_addr: str) -> str:
 
 def _send_with_brevo(to_addr: str, subject: str, body: str) -> bool:
     """Deliver a transactional email through Brevo's HTTPS API."""
-    if not BREVO_API_KEY or not EMAIL_FROM:
+    if not BREVO_API_KEY:
+        logger.error('Brevo configuration incomplete | missing=BREVO_API_KEY')
+        return False
+    if not EMAIL_FROM:
+        logger.error('Brevo configuration incomplete | missing=EMAIL_FROM')
         return False
 
     recipient_ref = _recipient_reference(to_addr)

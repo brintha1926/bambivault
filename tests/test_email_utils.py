@@ -60,6 +60,26 @@ def test_brevo_failure_returns_false(monkeypatch):
     ) is False
 
 
+def test_brevo_reports_missing_api_key(monkeypatch):
+    messages = []
+    monkeypatch.setattr(email_utils, 'BREVO_API_KEY', '')
+    monkeypatch.setattr(email_utils, 'EMAIL_FROM', 'verified@example.com')
+    monkeypatch.setattr(
+        email_utils.logger,
+        'error',
+        lambda message, *args: messages.append(message % args if args else message),
+    )
+
+    delivered = email_utils._send_with_brevo(
+        'member@example.com',
+        'Verify account',
+        'Verification message',
+    )
+
+    assert delivered is False
+    assert messages == ['Brevo configuration incomplete | missing=BREVO_API_KEY']
+
+
 def test_email_prefers_brevo_before_smtp(monkeypatch):
     calls = []
     monkeypatch.setattr(

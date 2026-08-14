@@ -53,6 +53,31 @@ def test_render_health_endpoint_reports_ok(client):
     assert resp.get_json()["status"] == "ok"
 
 
+def test_admin_stats_uses_portable_daily_trend_query(client, app_module):
+    from datetime import datetime
+
+    from models import db, PasswordLog
+
+    with app_module.app.app_context():
+        row = PasswordLog(
+            hash_prefix="ABCDE",
+            strength_label="Weak",
+            entropy=12.0,
+            breach_exposed=True,
+            breach_risk="Critical",
+            submitted_at=datetime(2026, 8, 14, 8, 30),
+        )
+        db.session.add(row)
+        db.session.commit()
+
+    with client.session_transaction() as session:
+        session["is_admin"] = True
+
+    response = client.get("/api/admin/stats")
+    assert response.status_code == 200
+    assert response.get_json()["breach_trend"][-1]["day"] == "2026-08-14"
+
+
 def test_strengthen_returns_three_distinct_variants(client):
     original = "amy"
     resp = client.post("/strengthen", json={"password": original})

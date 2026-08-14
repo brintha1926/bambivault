@@ -1,122 +1,161 @@
 # BambiVault
 
-An Interactive System for Evaluating Password Behaviour and Security Awareness Among University Students.
+BambiVault is a password-security assessment and encrypted credential-management platform. It combines machine-learning classification, behavioural pattern detection, privacy-preserving breach intelligence, personalised guidance, account security controls, and anonymised administrative reporting.
 
-Final Year Project (FYP) by **Brintha A/P Subramoney** (23ACB05162)
-Supervisor: Nor'Afifah Binti Sabri
-Universiti Tunku Abdul Rahman (UTAR) — Bachelor of Information Technology (Honours), Communications and Networking
+## Core capabilities
 
-## Overview
+- Five-tier password-strength classification using a Random Forest model
+- Detection of keyboard walks, name-and-year patterns, substitutions, and dictionary words
+- Have I Been Pwned range queries using a five-character SHA-1 prefix
+- Personalised stronger-password variants generated without sending plaintext passwords to an AI service
+- Encrypted credential vault protected by a master password and Account Key
+- Email verification, password recovery, session management, and TOTP authentication
+- Aggregated administrative analytics with CSV, PDF, DOCX, and text exports
 
-Rule-based password checkers only evaluate surface-level complexity (length, symbols, digits), which means predictable but "compliant" passwords like `P@ssw0rd1` pass every rule while still being trivially crackable. BambiVault addresses this by combining:
+### API reference
 
-- **ML-based strength classification** — a Random Forest model trained on real-world leaked password data, classifying passwords into five tiers (Very Weak → Very Strong) and identifying *why* a password is weak, not just a score.
-- **Real-time breach detection** — integration with the Have I Been Pwned (HIBP) Pwned Passwords API using the k-Anonymity protocol, so the full password or hash is never transmitted over the network.
-- **Personalised behavioural feedback** — pattern detection for keyboard walks, name+year combinations, character substitutions, and dictionary words, mapped to targeted recommendations.
-- **Anonymised admin dashboard** — aggregated, anonymised institutional statistics for university staff, with no plaintext passwords or user-identifying data ever stored.
+| Method | Route | Access | Purpose |
+|---|---|---|---|
+| `POST` | `/analyse` | Public, rate-limited | Evaluate password strength, patterns, and breach exposure |
+| `GET` | `/api/stats` | Authenticated user | Retrieve personal analysis statistics |
+| `GET`, `POST` | `/api/vault/entries` | Authenticated user with an unlocked vault | List metadata or create an encrypted vault entry |
+| `GET` | `/api/admin/stats` | Administrator | Retrieve aggregated institutional statistics |
 
-## Features
+## Technology
 
-- Student-facing password analyser with live strength meter
-- Custom breach detection engine (`breach.py`) combining HIBP API results with local pattern-matching rules, a composite 5-tier risk score, and a persistent SQLite-backed cache
-- Behavioural profile classification (Keyboard-Walk, Name+Year, Substitution, Dictionary-Word, Clean)
-- Admin dashboard with strength distribution, breach risk levels, behavioural profile trends, period-over-period comparison, and CSV/PDF/DOCX/TXT export
-- Anonymised, filterable database records view
-- Rate limiting and structured logging on the backend
-
-## Tech Stack
-
-| Component | Technology |
+| Layer | Technology |
 |---|---|
 | Backend | Python, Flask, Flask-SQLAlchemy |
-| Machine Learning | scikit-learn (Random Forest), joblib |
-| Frontend | HTML, CSS, JavaScript |
-| Database | SQLite |
-| Breach Detection | Have I Been Pwned (HIBP) Pwned Passwords API |
-| Training Data | RockYou leaked password corpus |
+| Database | SQLite for development; PostgreSQL/Neon for production |
+| Machine learning | scikit-learn, Random Forest, joblib |
+| Frontend | Jinja, HTML, CSS, JavaScript, Alpine.js |
+| Breach intelligence | Have I Been Pwned Pwned Passwords API |
+| Database migrations | Alembic, Flask-Migrate |
+| Testing and typing | pytest, mypy |
 
-## Project Structure
+## Security boundaries
 
-```
-fyp_password/
-├── app.py                     # Flask application and API routes
-├── breach.py                  # Breach detection module (HIBP + local rules)
-├── feature_extraction.py      # Password feature/entropy extraction
-├── models.py                  # SQLAlchemy database model
-├── train_model_v3.py          # Model training script
-├── generate_training_data_v3.py
-├── clean_data.py               # Dataset cleaning pipeline
-├── templates/                 # HTML pages (analyser, dashboard, admin, database)
-├── static/                    # CSS
-├── data/                      # Datasets (not fully included — see below)
-└── model/                     # Trained model file (not included — see below)
-```
+- Submitted passwords are not stored in plaintext.
+- Breach queries transmit only a five-character SHA-1 prefix.
+- Analysis history contains derived attributes rather than submitted passwords.
+- Vault fields are encrypted before database storage.
+- Vault decryption requires the master password and Account Key.
+- Recovery codes are stored as password hashes.
+- Authentication and analysis throttling uses shared database counters.
+- Administrative reporting contains aggregated, anonymised statistics.
 
-## Setup
+## Local development
 
-### 1. Clone the repository
-
-```bash
+```powershell
 git clone https://github.com/brintha1926/bambivault.git
 cd bambivault
-```
-
-### 2. Create a virtual environment and install dependencies
-
-```bash
 python -m venv venv
-venv\Scripts\activate        # Windows
-pip install -r requirements.txt
+.\venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python app.py
 ```
 
-### 3. Create your `.env` file
+The application is available at `http://127.0.0.1:5000`.
 
-Create a file named `.env` in the project root:
+## Configuration
 
+Create `.env` in the repository root. Do not commit this file.
+
+```dotenv
+SECRET_KEY="replace-with-a-random-secret"
+ADMIN_PASSWORD="replace-with-a-strong-administrator-password"
+DATABASE_URL="sqlite:///password_logs.db"
+FLASK_ENV="development"
+FLASK_DEBUG="True"
+APP_BASE_URL="http://127.0.0.1:5000"
 ```
-SECRET_KEY=your-random-secret-key-here
-ADMIN_PASSWORD=your-admin-password-here
-DATABASE_URL=sqlite:///password_logs.db
-FLASK_DEBUG=True
-```
 
-Generate a secure random key with:
-```bash
+Optional integrations use `GROQ_API_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM`.
+
+Generate a Flask session secret with:
+
+```powershell
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-### 4. Regenerate the dataset and model (not included in this repo)
+## Model assets
 
-Due to GitHub's file size limits, the following are **not** included:
-- `data/rockyou.txt`, `data/rockyou_clean.txt` (raw and cleaned RockYou corpus)
-- `data/training_data_v3.csv` (generated training features)
-- `model/strength_model_rf_v3.pkl` (trained Random Forest model)
+The trained model and source datasets are intentionally excluded from Git. To rebuild the model:
 
-To regenerate them:
-
-```bash
-# 1. Place a copy of rockyou.txt in data/
+```powershell
 python clean_data.py
 python generate_training_data_v3.py
 python train_model_v3.py
 ```
 
-This produces `model/strength_model_rf_v3.pkl`, which `app.py` loads on startup.
+The resulting model must be available at `model/strength_model_rf_v3.pkl`.
 
-### 5. Run the app
+## PostgreSQL migration
 
-```bash
-python app.py
+Set the direct PostgreSQL connection string and initialise the schema:
+
+```powershell
+$env:DATABASE_URL="postgresql+psycopg://USER:PASSWORD@HOST/DATABASE?sslmode=require"
+python -m flask --app app bootstrap
 ```
 
-Visit `http://127.0.0.1:5000` in your browser.
+To transfer existing SQLite data:
 
-## Notes on Privacy
+```powershell
+$env:POSTGRES_DATABASE_URL=$env:DATABASE_URL
+python migrate_sqlite_to_postgres.py --source instance/password_logs.db --dry-run
+python migrate_sqlite_to_postgres.py --source instance/password_logs.db
+```
 
-- No plaintext passwords or complete password hashes are ever stored.
-- Only the first 5 characters of a password's SHA-1 hash are sent to the HIBP API (k-Anonymity).
-- Database records store only strength labels, detected pattern flags, entropy scores, and breach status — no user-identifying information.
+The transfer validates row counts, checks vault ownership, and updates PostgreSQL identity sequences. Vault ciphertext is copied without decryption.
 
-## Status
+## Testing
 
-This project is under active development as part of FYP II. See the project report for full methodology, literature review, and system design details.
+```powershell
+python -m pip install -r requirements.txt -r requirements-dev.txt
+python -m pytest -v
+python -m mypy feature_extraction.py strengthen.py config.py security_utils.py migrate_sqlite_to_postgres.py
+```
+
+The automated suite covers analysis responses, breach fallbacks, caching, behavioural classification, authentication boundaries, PostgreSQL transfer validation, Unicode input, stronger-password variants, vault cryptography, and secure exports.
+
+## Production deployment
+
+Set `FLASK_ENV=production` and configure secrets through the hosting provider. Run database preparation once as the release or pre-deploy command:
+
+```bash
+flask --app app bootstrap
+```
+
+Start the application workers separately:
+
+```bash
+gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 60 app:app
+```
+
+Database migrations must not run independently inside each worker.
+
+## Repository structure
+
+```text
+app.py                         Flask application and API routes
+vault_routes.py                Account, session, export, and vault endpoints
+models.py                      SQLAlchemy models
+feature_extraction.py          Password feature extraction
+ml_classifier.py               Strength classification
+strengthen.py                  Stronger-password generation
+breach.py                      Breach intelligence and risk scoring
+security_utils.py              Validation and shared throttling
+migrations/                    Alembic database revisions
+templates/                     Active Jinja templates
+static/                        Styles and image assets
+tests/                         Automated test suite
+```
+
+## Interface preview
+
+The landing-page product preview is maintained at `static/img/landing-product.svg`. Production screenshots should be captured from the deployed build without local accounts or test records.
+
+## Project provenance
+
+BambiVault was developed by Brintha A/P Subramoney as a Bachelor of Information Technology (Honours), Communications and Networking capstone project at Universiti Tunku Abdul Rahman. Project reference: `23ACB05162`.

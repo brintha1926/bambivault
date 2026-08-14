@@ -1,0 +1,336 @@
+/* Vault workspace */
+
+/* Wider layout on desktop */
+@media (min-width: 1024px) {
+  .page-body:has(.vault-root) { max-width: 80rem; }
+}
+
+/* ─── Vault root container ─── */
+.vault-root { width: 100%; }
+
+/* ─── Vault page header ─── */
+.vault-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  flex-wrap: wrap; gap: 1rem; margin-bottom: 1.75rem;
+}
+.vault-header-info { min-width: 0; }
+.vault-header-title {
+  font-size: 1.625rem; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--text); margin-bottom: .3rem;
+}
+.vault-header-sub { font-size: .875rem; color: var(--text-secondary); }
+.vault-header-actions {
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+}
+
+/* ─── Vault status badge ─── */
+.vault-status-badge {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .35rem .7rem; border-radius: 999px;
+  font-size: .76rem; font-weight: 600;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-secondary);
+}
+.vault-status-badge .status-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.vault-status-badge.unlocked {
+  background: var(--success-soft); color: var(--success); border-color: #a7f3d0;
+}
+.vault-status-badge.unlocked .status-dot {
+  background: var(--success); box-shadow: 0 0 0 3px rgba(4,120,87,.15);
+}
+.vault-status-badge.locked { background: var(--surface-2); color: var(--muted); }
+.vault-status-badge.locked .status-dot { background: var(--muted); }
+
+/* ─── Loading skeleton state ─── */
+.vault-state-loading { display: flex; flex-direction: column; gap: 1rem; }
+
+/* ─── Setup / Unlock state card ─── /* REPLACES .vault-state-card */
+.vault-state-card-wide {
+  max-width: 460px; margin: 3rem auto; padding: 2rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-sm);
+}
+.vault-state-card-wide .state-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1.2rem;
+}
+.vault-state-card-wide .state-icon svg { width: 24px; height: 24px; }
+.vault-state-card-wide .state-icon.locked { background: var(--surface-2); color: var(--muted); }
+.vault-state-card-wide .state-icon.setup { background: var(--accent-faint); color: var(--accent); }
+.vault-state-card-wide h2 { font-size: 1.25rem; margin-bottom: .4rem; }
+.vault-state-card-wide .state-desc {
+  font-size: .875rem; color: var(--text-secondary);
+  line-height: 1.55; margin-bottom: 1.5rem;
+}
+
+/* ─── Vault error text ─── /* REPLACES .vault-err (keeps selector, refines) */
+.vault-err {
+  color: var(--danger); font-size: .8rem; margin-bottom: .8rem;
+  min-height: 1em; line-height: 1.45;
+}
+.vault-err:empty { margin-bottom: 0; min-height: 0; }
+
+/* ─── Required field marker ─── */
+.req { color: var(--danger); font-weight: 700; }
+
+/* ─── Account key info list ─── */
+.vault-key-info-list { display: grid; gap: .5rem; }
+.vault-key-info-item {
+  display: flex; gap: .5rem; align-items: flex-start;
+  font-size: .82rem; color: var(--text-secondary); line-height: 1.5;
+}
+.vault-key-info-item svg {
+  width: 15px; height: 15px; flex-shrink: 0; margin-top: .15rem;
+  color: var(--accent);
+}
+
+/* ─── Account key display (in modal) ─── /* REPLACES .account-key-box */
+.vault-key-display {
+  font-family: var(--mono); font-size: 1.1rem; font-weight: 700;
+  letter-spacing: .08em; text-align: center;
+  background: var(--surface-2); border: 2px dashed var(--accent);
+  border-radius: var(--r); padding: 1.2rem; margin: 1rem 0;
+  word-break: break-all; color: var(--accent-hover);
+}
+
+/* ─── Vault health panel ─── */
+.vault-health-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 1.4rem; margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+.vault-health-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 1rem;
+}
+.vault-health-title {
+  font-size: .875rem; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: .5rem;
+}
+.vault-health-title svg { width: 16px; height: 16px; color: var(--accent); }
+
+/* ─── Vault health grid ─── /* REPLACES .vault-health */
+.vault-health-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem;
+}
+@media (min-width: 768px) { .vault-health-grid { grid-template-columns: repeat(4, 1fr); } }
+.vault-health-stat {
+  padding: 1rem; border-radius: var(--r); border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.vault-health-stat .stat-label {
+  font-size: .72rem; font-weight: 600; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: .4rem;
+}
+.vault-health-stat .stat-value {
+  font-size: 1.6rem; font-weight: 800; line-height: 1;
+  letter-spacing: -0.02em; color: var(--text);
+}
+.vault-health-stat.weak .stat-value { color: var(--warn); }
+.vault-health-stat.breached .stat-value { color: var(--danger); }
+.vault-health-stat.reused .stat-value { color: var(--purple); }
+.vault-health-stat.total .stat-value { color: var(--accent); }
+
+/* ─── Vault toolbar ─── */
+.vault-toolbar {
+  display: flex; gap: .6rem; align-items: center; flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.vault-search { flex: 1; min-width: 200px; position: relative; }
+.vault-search input {
+  width: 100%; padding: .55rem .9rem .55rem 2.25rem;
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--r); font-size: .85rem; font-family: var(--font); color: var(--text);
+}
+.vault-search input:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+.vault-search .search-icon {
+  position: absolute; left: .75rem; top: 50%; transform: translateY(-50%);
+  color: var(--muted); pointer-events: none; display: flex;
+}
+.vault-search .search-icon svg { width: 16px; height: 16px; }
+
+.vault-filter {
+  padding: .55rem .8rem; border: 1px solid var(--border-strong);
+  border-radius: var(--r); background: var(--surface);
+  font-size: .82rem; font-family: var(--font); color: var(--text); cursor: pointer;
+}
+.vault-filter:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+
+/* ─── Entry list ─── */
+.vault-entry-list {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-sm);
+}
+
+/* ─── Entry card ─── /* REPLACES .vault-entry-row */
+.vault-entry-card {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) minmax(0, 1.5fr) auto;
+  gap: 1rem; align-items: center;
+  padding: .9rem 1.1rem; border-bottom: 1px solid var(--border);
+  transition: background .1s ease;
+}
+.vault-entry-card:last-child { border-bottom: none; }
+.vault-entry-card:hover { background: var(--surface-2); }
+.vault-entry-card .entry-site {
+  font-weight: 600; font-size: .875rem; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.vault-entry-card .entry-site .entry-date {
+  display: block; font-weight: 400; font-size: .72rem;
+  color: var(--muted); margin-top: .15rem;
+}
+.vault-entry-card .entry-username {
+  font-size: .82rem; color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.vault-entry-card .entry-password {
+  font-family: var(--mono); font-size: .85rem; color: var(--text-secondary);
+  letter-spacing: .05em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.vault-entry-card .entry-password.revealed { color: var(--text); }
+.vault-entry-card .entry-actions {
+  display: flex; gap: .3rem; justify-self: end;
+}
+
+/* ─── Entry action buttons ─── */
+.entry-action-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface); color: var(--text-secondary);
+  cursor: pointer; transition: all .12s ease;
+  font-family: var(--font);
+}
+.entry-action-btn:hover {
+  border-color: var(--accent); color: var(--accent); background: var(--accent-faint);
+}
+.entry-action-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.entry-action-btn.danger:hover {
+  border-color: var(--danger); color: var(--danger); background: var(--danger-soft);
+}
+.entry-action-btn svg { width: 15px; height: 15px; }
+.entry-action-btn .action-label {
+  display: none; font-size: .74rem; font-weight: 600; margin-left: .3rem;
+}
+
+/* ─── Entry card responsive ─── */
+@media (max-width: 768px) {
+  .vault-entry-card {
+    grid-template-columns: 1fr; gap: .5rem; padding: 1rem;
+  }
+  .vault-entry-card .entry-actions {
+    justify-self: start; flex-wrap: wrap;
+  }
+  .entry-action-btn { width: auto; padding: 0 .6rem; }
+  .entry-action-btn .action-label { display: inline; }
+}
+
+/* ─── Copy feedback animation ─── */
+@keyframes bv-copy-flash {
+  0% { background: var(--success-soft); border-color: var(--success); }
+  100% { background: var(--surface); border-color: var(--border); }
+}
+.entry-action-btn.copied { animation: bv-copy-flash .8s ease-out; }
+
+/* ─── Vault form section ─── /* REPLACES .vault-add-form container */
+.vault-form-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 1.4rem; margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+.vault-form-section-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 1rem;
+}
+.vault-form-section-title {
+  font-size: .9rem; font-weight: 700; color: var(--text);
+}
+
+/* ─── Vault form grid ─── /* REPLACES .vault-add-form */
+.vault-form-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .75rem;
+}
+.vault-form-grid .full { grid-column: 1 / -1; }
+@media (max-width: 640px) { .vault-form-grid { grid-template-columns: 1fr; } }
+
+/* ─── Vault settings section ─── */
+.vault-settings-section { margin-top: 1.5rem; }
+.vault-settings-row {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 1rem; padding: .5rem 0;
+}
+.vault-settings-info { min-width: 0; }
+.vault-settings-label { font-size: .875rem; font-weight: 600; color: var(--text); margin-bottom: .2rem; }
+.vault-settings-desc { font-size: .78rem; color: var(--text-secondary); line-height: 1.5; }
+
+/* ─── Entry count ─── */
+.entry-count {
+  font-size: .78rem; color: var(--muted); font-weight: 500;
+  text-align: right; margin-top: .75rem;
+}
+
+/* ─── Export menu ─── */
+.vault-export-wrap { position: relative; display: inline-block; }
+.vault-export-menu {
+  display: none; position: absolute; top: calc(100% + 6px); right: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); min-width: 220px; overflow: hidden;
+  z-index: 20; box-shadow: var(--shadow-lg);
+}
+.vault-export-menu.open { display: block; }
+.vault-export-menu button {
+  display: flex; align-items: center; gap: .5rem;
+  width: 100%; text-align: left; padding: .6rem .9rem;
+  background: none; border: none; color: var(--text-secondary);
+  font-size: .82rem; cursor: pointer; font-family: var(--font);
+}
+.vault-export-menu button:hover { background: var(--surface-2); color: var(--text); }
+.vault-export-menu button:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+.vault-export-menu button + button { border-top: 1px solid var(--border); }
+.vault-export-menu button svg { width: 15px; height: 15px; }
+
+/* ─── Password input wrapper ─── */
+.pw-input-wrap { position: relative; }
+.pw-input-wrap .input { padding-right: 2.75rem; width: 100%; }
+.pw-input-wrap .pw-toggle {
+  position: absolute; right: .4rem; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0;
+  background: transparent; border: 1px solid transparent; border-radius: 6px;
+  color: var(--text-secondary); cursor: pointer;
+}
+.pw-input-wrap .pw-toggle:hover { color: var(--accent); background: var(--surface-2); }
+.pw-input-wrap .pw-toggle:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.pw-input-wrap .pw-toggle svg { width: 16px; height: 16px; }
+
+/* ─── Native Dialog Modal styling ─── */
+dialog.vault-modal {
+  padding: 0; border: none; border-radius: var(--r-lg);
+  background: transparent; box-shadow: var(--shadow-lg);
+  max-width: 90vw; color: var(--text);
+}
+dialog.vault-modal::backdrop {
+  background: rgba(15,23,42,.55);
+  backdrop-filter: blur(2px);
+}
+dialog.vault-modal .modal-content {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 1.6rem; width: 440px; max-width: 100%;
+}
+dialog.vault-modal .modal-title { font-size: 1rem; margin-bottom: .35rem; }
+dialog.vault-modal .modal-body {
+  font-size: .88rem; color: var(--text-secondary);
+  line-height: 1.55; margin-bottom: 1.2rem;
+}
+dialog.vault-modal .modal-actions {
+  display: flex; gap: .5rem; justify-content: flex-end;
+}
+@media (max-width: 480px) {
+  dialog.vault-modal .modal-content { padding: 1.25rem; }
+  dialog.vault-modal .modal-actions { flex-direction: column-reverse; }
+  dialog.vault-modal .modal-actions .btn { width: 100%; }
+}

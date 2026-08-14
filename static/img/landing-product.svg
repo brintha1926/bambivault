@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 650" role="img" aria-labelledby="landing-product-title landing-product-desc" preserveAspectRatio="xMidYMid meet">
+  <title id="landing-product-title">BambiVault password analyser results</title>
+  <desc id="landing-product-desc">BambiVault analyser interface assessing Summer2026!, showing a weak classification, critical breach risk, a detected name and year pattern, breach intelligence, and three personalised stronger alternatives.</desc>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.07"/>
+    </filter>
+    <linearGradient id="strength" x1="0" x2="1">
+      <stop offset="0" stop-color="#dc2626"/>
+      <stop offset="1" stop-color="#ef4444"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1120" height="650" fill="#f8fafc"/>
+  <rect width="1120" height="58" fill="#ffffff"/>
+  <path d="M0 58h1120" stroke="#e2e8f0"/>
+  <circle cx="28" cy="29" r="5" fill="#fca5a5"/>
+  <circle cx="47" cy="29" r="5" fill="#fde68a"/>
+  <circle cx="66" cy="29" r="5" fill="#99f6e4"/>
+  <text x="560" y="35" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" fill="#64748b">bambivault.app/analyser</text>
+
+  <g filter="url(#shadow)">
+    <rect x="34" y="82" width="1052" height="164" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  </g>
+  <text x="58" y="112" font-family="Inter, Arial, sans-serif" font-size="12" fill="#0f172a" font-weight="700">Password</text>
+  <rect x="58" y="124" width="830" height="42" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <path d="M77 143v-3a5 5 0 0110 0v3m-12 0h14v11H75z" fill="none" stroke="#94a3b8" stroke-width="1.6"/>
+  <text x="101" y="151" font-family="JetBrains Mono, Consolas, monospace" font-size="14" fill="#0f172a">Summer2026!</text>
+  <path d="M862 141c6 0 10 7 10 7s-4 7-10 7-10-7-10-7 4-7 10-7z" fill="none" stroke="#64748b" stroke-width="1.5"/>
+  <circle cx="862" cy="148" r="2.5" fill="#64748b"/>
+  <rect x="900" y="124" width="160" height="42" rx="8" fill="#0d9488"/>
+  <text x="971" y="151" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" fill="#ffffff" font-weight="700">Analyse</text>
+  <path d="M1026 145h10m-4-4 4 4-4 4" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="58" y="187" font-family="Inter, Arial, sans-serif" font-size="11" fill="#94a3b8">11 characters</text>
+  <rect x="58" y="199" width="1002" height="6" rx="3" fill="#f1f5f9"/>
+  <rect x="58" y="199" width="238" height="6" rx="3" fill="url(#strength)"/>
+  <text x="58" y="226" font-family="Inter, Arial, sans-serif" font-size="12" fill="#b91c1c" font-weight="700">Weak</text>
+  <rect x="884" y="211" width="176" height="25" rx="12.5" fill="#fef2f2" stroke="#fecaca"/>
+  <text x="972" y="228" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#b91c1c" font-weight="600">Estimated crack time: 2 hours</text>
+
+  <g filter="url(#shadow)">
+    <rect x="34" y="266" width="1052" height="90" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  </g>
+  <path d="M297 284v54M560 284v54M823 284v54" stroke="#e2e8f0"/>
+  <g font-family="Inter, Arial, sans-serif" text-anchor="middle">
+    <text x="166" y="292" font-size="10" fill="#94a3b8" font-weight="700">CLASSIFICATION</text>
+    <text x="166" y="325" font-size="21" fill="#b91c1c" font-weight="800">Weak</text>
+    <text x="428" y="292" font-size="10" fill="#94a3b8" font-weight="700">ENTROPY</text>
+    <text x="428" y="325" font-size="21" fill="#0f172a" font-weight="800">27.4 bits</text>
+    <text x="691" y="292" font-size="10" fill="#94a3b8" font-weight="700">BREACH RISK</text>
+    <text x="691" y="325" font-size="21" fill="#9333ea" font-weight="800">Critical</text>
+    <text x="954" y="292" font-size="10" fill="#94a3b8" font-weight="700">KNOWN EXPOSURES</text>
+    <text x="954" y="325" font-size="21" fill="#b91c1c" font-weight="800">4,812</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="34" y="376" width="506" height="130" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="558" y="376" width="528" height="130" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  </g>
+  <text x="58" y="405" font-family="Inter, Arial, sans-serif" font-size="12" fill="#0f172a" font-weight="700">Detected pattern</text>
+  <rect x="58" y="421" width="136" height="27" rx="13.5" fill="#fff7ed" stroke="#fed7aa"/>
+  <circle cx="76" cy="434.5" r="4" fill="#ea580c"/>
+  <text x="87" y="439" font-family="Inter, Arial, sans-serif" font-size="11" fill="#9a3412" font-weight="600">Name + year</text>
+  <text x="58" y="473" font-family="Inter, Arial, sans-serif" font-size="12" fill="#475569">Predictable personal patterns are tested early in automated attacks.</text>
+  <text x="582" y="405" font-family="Inter, Arial, sans-serif" font-size="12" fill="#0f172a" font-weight="700">Breach intelligence</text>
+  <circle cx="590" cy="431" r="3" fill="#9333ea"/>
+  <text x="602" y="435" font-family="Inter, Arial, sans-serif" font-size="11.5" fill="#475569">Found in known breach data.</text>
+  <circle cx="590" cy="456" r="3" fill="#9333ea"/>
+  <text x="602" y="460" font-family="Inter, Arial, sans-serif" font-size="11.5" fill="#475569">Replace it on every account where it is used.</text>
+  <circle cx="590" cy="481" r="3" fill="#9333ea"/>
+  <text x="602" y="485" font-family="Inter, Arial, sans-serif" font-size="11.5" fill="#475569">Enable multi-factor authentication where available.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="34" y="526" width="1052" height="98" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  </g>
+  <text x="58" y="554" font-family="Inter, Arial, sans-serif" font-size="12" fill="#0f172a" font-weight="700">Personalised stronger alternatives</text>
+  <text x="1061" y="554" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="10.5" fill="#64748b">Generated locally using security rules</text>
+  <g font-family="JetBrains Mono, Consolas, monospace" font-size="12" fill="#0f172a">
+    <rect x="58" y="570" width="300" height="34" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="78" y="592">Summer!Bloom58</text>
+    <rect x="374" y="570" width="300" height="34" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="394" y="592">SuMm3r!Coast26</text>
+    <rect x="690" y="570" width="370" height="34" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="710" y="592">Sunny@Summer#58</text>
+  </g>
+</svg>

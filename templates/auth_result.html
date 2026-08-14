@@ -1,0 +1,27 @@
+{% extends "public_base.html" %}
+{% block title %}BambiVault — {{ title }}{% endblock %}
+
+{% block public_nav_links %}
+  <a href="{{ url_for('index') }}">Home</a>
+{% endblock %}
+
+{% block public_content %}
+<div class="auth-shell">
+  <div class="auth-result-card" role="region" aria-labelledby="result-title">
+    <div class="auth-result-icon {{ '' if success else 'danger' }}" aria-hidden="true">
+      {% if success %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      {% else %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      {% endif %}
+    </div>
+    <h1 id="result-title">{{ title }}</h1>
+    <p>{{ message }}</p>
+    {% if cta_href and cta_label %}
+    <a href="{{ cta_href }}" class="btn btn-primary btn-block">{{ cta_label }}</a>
+    {% else %}
+    <a href="{{ url_for('login') }}" class="btn btn-primary btn-block">Go to sign in</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

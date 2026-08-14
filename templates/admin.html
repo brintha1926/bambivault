@@ -1,341 +1,360 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BambiVault — Admin Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
-  <style>
-    .admin-topbar {
-      display:flex; justify-content:space-between; align-items:center;
-      margin-bottom: 1rem; flex-wrap:wrap; gap:12px;
-    }
-    .topbar-actions { display:flex; align-items:center; gap:8px; }
+{% extends "base.html" %}
+{% block title %}BambiVault — Security analytics{% endblock %}
 
-    .btn-sm {
-      padding: .5rem 1rem; border-radius: 8px; font-size: .78rem; font-weight: 600;
-      border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.03);
-      color: #fff; cursor: pointer; text-decoration: none; display: inline-block;
-    }
-    .btn-sm:hover { border-color: #00ffc8; color: #00ffc8; }
-    .btn-sm.active { border-color:#00ffc8; color:#00ffc8; background:rgba(0,255,200,.08); }
-    .btn-export { background: #00ffc8; color: #000; border: none; }
-    .btn-logout { border-color: rgba(239,68,68,.3); color: #f3a5a5; }
-    .btn-logout:hover { border-color:#ef4444; color:#ef4444; }
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6 sm:space-y-8">
 
-    .trend-row { display:flex; align-items:flex-end; gap: 6px; height: 120px; padding: 10px 0; overflow-x:auto; }
-    .trend-bar { flex:1; min-width:8px; background: linear-gradient(180deg,#ef444488,#ef4444); border-radius: 3px 3px 0 0; position: relative; min-height: 2px; }
-    .trend-day { font-size: .58rem; color: var(--muted,#888); text-align:center; margin-top: 4px; }
-
-    /* Toolbar — enterprise dashboard style: segmented presets left, dates right, no Apply button */
-    .filter-bar {
-      display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap;
-      background: rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.08);
-      border-radius:10px; padding:8px 12px; margin-bottom:1.2rem;
-    }
-    .segmented {
-      display:flex; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);
-      border-radius:8px; padding:3px; gap:2px;
-    }
-    .segmented button {
-      padding:.42rem .85rem; border-radius:6px; font-size:.74rem; font-weight:600;
-      border:none; background:transparent; color:var(--muted,#888); cursor:pointer;
-    }
-    .segmented button.active { background:#00ffc8; color:#000; }
-    .segmented button:hover:not(.active) { color:#fff; }
-
-    .date-group { display:flex; align-items:center; gap:6px; }
-    .date-group input[type=date] {
-      background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.15);
-      border-radius:6px; padding:.4rem .55rem; color:#fff; font-size:.76rem;
-    }
-    .date-sep { color:var(--muted,#888); font-size:.75rem; }
-
-    .export-wrap { position: relative; display:inline-block; }
-    .btn-export-main { display:flex; align-items:center; gap:6px; }
-    .export-menu {
-      display:none; position:absolute; top:calc(100% + 6px); right:0;
-      background:#12121c; border:1px solid rgba(255,255,255,.12);
-      border-radius:8px; min-width:170px; overflow:hidden; z-index:20;
-      box-shadow:0 8px 24px rgba(0,0,0,.4);
-    }
-    .export-menu.open { display:block; }
-    .export-menu button {
-      display:block; width:100%; text-align:left; padding:.6rem .9rem;
-      background:none; border:none; color:#fff; font-size:.78rem;
-      cursor:pointer; font-family:inherit;
-    }
-    .export-menu button:hover { background:rgba(0,255,200,.1); color:#00ffc8; }
-    .export-menu button + button { border-top:1px solid rgba(255,255,255,.06); }
-
-    .compare-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:8px 0; }
-    .compare-card { background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:14px; text-align:center; }
-    .compare-label { font-size:.65rem; color:var(--muted,#888); font-weight:700; letter-spacing:.08em; margin-bottom:4px; }
-    .compare-val { font-size:1.4rem; font-weight:700; font-family:var(--mono,monospace); }
-    .compare-delta { font-size:.72rem; margin-top:4px; }
-    .compare-sub { color:var(--muted,#888); font-weight:400; font-size:.72rem; }
-  </style>
-</head>
-<body>
-<div class="grid-bg"></div>
-<nav class="navbar">
-  <div class="nav-brand"><span class="brand-name">Bambi<span class="brand-acc">Vault</span></span></div>
-  <div class="nav-links">
-    <a href="/"><span class="ni">◈</span>Analyser</a>
-    <a href="/dashboard"><span class="ni">◉</span>Trends</a>
-    <a href="/database"><span class="ni">◫</span>Database</a>
-    <a href="/admin" class="active"><span class="ni">⚙</span>Admin</a>
-  </div>
-  <div class="nav-status"><span class="sdot"></span>Admin Session</div>
-</nav>
-
-<main class="container">
-  <div class="admin-topbar">
+  <div class="page-header">
     <div>
-      <h2>Administrator Dashboard</h2>
-      <p class="hero-sub">Institutional statistics</p>
+      <h1 class="page-title">Security analytics</h1>
+      <p class="page-subtitle">Aggregated password-risk trends and breach exposure.</p>
     </div>
-    <div class="topbar-actions">
-      <div class="export-wrap">
-        <button class="btn-sm btn-export btn-export-main" onclick="toggleExportMenu(event)">EXPORT ▾</button>
-        <div class="export-menu" id="exportMenu">
-          <button onclick="exportAs('csv')">CSV</button>
-          <button onclick="exportAs('pdf')">PDF</button>
-          <button onclick="exportAs('docx')">DOCX</button>
-          <button onclick="exportAs('txt')">TXT</button>
+    <div class="flex gap-2">
+      <div class="export-wrap" id="exportWrap">
+        <button class="btn btn-secondary" type="button" id="exportBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="exportMenu">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          Export
+        </button>
+        <div class="export-menu" id="exportMenu" role="menu">
+          <button role="menuitem" type="button" data-fmt="csv">Download as CSV</button>
+          <button role="menuitem" type="button" data-fmt="pdf">Download as PDF</button>
+          <button role="menuitem" type="button" data-fmt="docx">Download as Word (.docx)</button>
+          <button role="menuitem" type="button" data-fmt="txt">Download as plain text</button>
         </div>
       </div>
-      <a href="/admin/logout" class="btn-sm btn-logout">LOG OUT</a>
     </div>
   </div>
 
-  <div class="filter-bar">
-    <div class="segmented" id="presetGroup">
-      <button onclick="setPreset('today')" data-preset="today">Today</button>
-      <button onclick="setPreset('week')" data-preset="week">This week</button>
-      <button onclick="setPreset('month')" data-preset="month">This month</button>
-      <button class="active" onclick="setPreset('all')" data-preset="all">All time</button>
+  <!-- FILTER BAR -->
+  <div class="filter-bar" id="filterBar">
+    <div class="segmented" id="rangeSegmented" role="group" aria-label="Time range">
+      <button type="button" data-range="7">7 days</button>
+      <button type="button" data-range="30" class="active">30 days</button>
+      <button type="button" data-range="90">90 days</button>
+      <button type="button" data-range="365">1 year</button>
+      <button type="button" data-range="all">All time</button>
     </div>
     <div class="date-group">
-      <input type="date" id="rangeStart" onchange="onDateChange()">
+      <label class="text-xs text-text-muted" for="dateFrom" style="margin-right:.25rem">From</label>
+      <input type="date" id="dateFrom" class="db-sel" aria-label="Start date">
       <span class="date-sep">→</span>
-      <input type="date" id="rangeEnd" onchange="onDateChange()">
+      <label class="text-xs text-text-muted" for="dateTo" style="margin-right:.25rem">To</label>
+      <input type="date" id="dateTo" class="db-sel" aria-label="End date">
     </div>
   </div>
 
+  <!-- STAT ROW -->
   <div class="dstat-row">
-    <div class="dstat"><div class="dstat-label">TOTAL ANALYSES</div><div class="dstat-val" id="sTotal">—</div></div>
-    <div class="dstat"><div class="dstat-label">BREACHES FOUND</div><div class="dstat-val danger" id="sBreach">—</div><div class="dstat-delta" id="sRate">— breach rate</div></div>
-    <div class="dstat"><div class="dstat-label">AVG ENTROPY</div><div class="dstat-val" id="sEntropy">—</div></div>
-    <div class="dstat"><div class="dstat-label">STRONG PASSWORDS</div><div class="dstat-val success" id="sStrong">—</div></div>
+    <div class="dstat">
+      <div class="dstat-label">Total analyses</div>
+      <div class="dstat-val" id="aTotal">—</div>
+      <div class="dstat-delta" id="aTotalSub">All users combined</div>
+    </div>
+    <div class="dstat">
+      <div class="dstat-label">Avg entropy</div>
+      <div class="dstat-val" id="aAvgEntropy">—</div>
+      <div class="dstat-delta">bits, across all analyses</div>
+    </div>
+    <div class="dstat">
+      <div class="dstat-label">Breach exposures</div>
+      <div class="dstat-val" id="aBreach">—</div>
+      <div class="dstat-delta" id="aBreachPct">— of total</div>
+    </div>
+    <div class="dstat">
+      <div class="dstat-label">High-risk share</div>
+      <div class="dstat-val" id="aHighRisk">—</div>
+      <div class="dstat-delta">High Risk or Critical results</div>
+    </div>
   </div>
 
+  <!-- CHARTS ROW -->
   <div class="dchart-row">
-    <div class="panel"><div class="ptag">STRENGTH DISTRIBUTION</div><div id="distChart"></div></div>
-    <div class="panel"><div class="ptag">BREACH RISK LEVELS</div><div id="riskChart"></div></div>
+    <div class="panel">
+      <h3 class="panel-title">Strength distribution</h3>
+      <p class="panel-sub">Password-strength classifications for the selected period.</p>
+      <div id="distBars"></div>
+    </div>
+    <div class="panel">
+      <h3 class="panel-title">Behavioural profiles</h3>
+      <p class="panel-sub">Most common password behaviour patterns.</p>
+      <div id="patList"></div>
+    </div>
   </div>
 
-  <div class="dchart-row">
-    <div class="panel"><div class="ptag">BEHAVIOURAL PROFILE DISTRIBUTION</div><div id="profileChart"></div></div>
-    <div class="panel"><div class="ptag">BREACH TREND<span id="trendRangeLabel"></span></div><div id="trendChart"></div></div>
+  <!-- COMPARISON -->
+  <div class="panel">
+    <h3 class="panel-title">Period comparison</h3>
+    <p class="panel-sub">Current period vs. the previous period of the same length.</p>
+    <div class="compare-grid" id="compareGrid"></div>
   </div>
 
-  <div class="panel" style="margin-top:20px">
-    <div class="ptag">PERIOD COMPARISON</div>
-    <div id="compareRangeLabel" style="font-size:.72rem;color:var(--muted,#888);margin:2px 0 8px"></div>
-    <div id="compareChart"></div>
+  <!-- RISK TREND -->
+  <div class="panel">
+    <div class="flex items-start gap-3 mb-5">
+      <div class="p-2" style="background:var(--accent-faint); border-radius:var(--r)"><i data-lucide="trending-up" class="w-5 h-5 text-accent"></i></div>
+      <div>
+        <h3 class="panel-title">Risk trend over time</h3>
+        <p class="panel-sub">Daily breach exposure rate for the selected period.</p>
+      </div>
+    </div>
+    <div class="admin-trend-chart">
+      <canvas id="riskTrendChart" role="img" aria-label="Line chart showing daily breach exposure rate"></canvas>
+    </div>
   </div>
-</main>
 
+  <!-- KEY RISK INDICATORS -->
+  <div class="panel">
+    <h3 class="panel-title">Key risk indicators</h3>
+    <p class="panel-sub mb-5">The most important signals for the selected period.</p>
+    <div class="risk-kpi-grid" id="riskIndicators"></div>
+  </div>
+
+  <!-- RISK MATRIX -->
+  <div class="panel">
+    <h3 class="panel-title">Risk matrix</h3>
+    <p class="panel-sub mb-5">Issues ranked by prevalence and potential impact.</p>
+    <div class="risk-matrix" id="riskMatrix"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-const SORDER=['Very Weak','Weak','Medium','Strong','Very Strong'];
-const SCOLORS=['#ef4444','#f97316','#f59e0b','#10b981','#00ffc8'];
-const RCOLORS={'Safe':'#10b981','Low Risk':'#f59e0b','Moderate Risk':'#f97316','High Risk':'#ef4444','Critical':'#a855f7'};
-const PCOLORS={'Keyboard-Walk Type':'#ef4444','Name+Year Type':'#f97316','Substitution Type':'#f59e0b','Dictionary-Word Type':'#a855f7','Clean':'#10b981'};
-
-function fmtISO(d){ return d.toISOString().split('T')[0]; }
-
-// Nice short display date, e.g. "11 Jul" or "11 Jul 2026" if not current year
-function niceDate(iso){
-  if(!iso) return '';
-  const d = new Date(iso + 'T00:00:00');
-  const opts = { day:'numeric', month:'short' };
-  if(d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
-  return d.toLocaleDateString('en-GB', opts);
-}
-
-// Collapses a start/end pair into one clean label — avoids "X → X" duplication
-function rangeLabel(start, end){
-  if(!start && !end) return 'All time';
-  if(start === end) return niceDate(start);
-  return `${niceDate(start)} – ${niceDate(end)}`;
-}
-
-function clearPresetActive(){
-  document.querySelectorAll('#presetGroup button').forEach(b=>b.classList.remove('active'));
-}
-
-function setPreset(name){
-  clearPresetActive();
-  document.querySelector(`[data-preset="${name}"]`).classList.add('active');
-
-  const today = new Date();
-  let start = null, end = null;
-
-  if(name==='today'){ start = new Date(today); end = new Date(today); }
-  else if(name==='week'){ start = new Date(today); start.setDate(today.getDate()-6); end = new Date(today); }
-  else if(name==='month'){ start = new Date(today.getFullYear(), today.getMonth(), 1); end = new Date(today); }
-  else {
-    document.getElementById('rangeStart').value='';
-    document.getElementById('rangeEnd').value='';
-    load();
-    return;
+// Export dropdown: keyboard + click
+(function() {
+  var btn = document.getElementById('exportBtn');
+  var menu = document.getElementById('exportMenu');
+  if (!btn || !menu) return;
+  function setOpen(open) {
+    menu.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', String(open));
   }
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    setOpen(!menu.classList.contains('open'));
+  });
+  document.addEventListener('click', function(e) {
+    if (!btn.contains(e.target) && !menu.contains(e.target)) setOpen(false);
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && menu.classList.contains('open')) {
+      setOpen(false);
+      btn.focus();
+    }
+  });
+  menu.querySelectorAll('[data-fmt]').forEach(function(b) {
+    b.addEventListener('click', function() {
+      setOpen(false);
+      exportAs(b.getAttribute('data-fmt'));
+    });
+  });
+})();
 
-  document.getElementById('rangeStart').value = fmtISO(start);
-  document.getElementById('rangeEnd').value = fmtISO(end);
-  load();
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+
+function computeRange(rangeKey){
+  var to = document.getElementById('dateTo').value;
+  var from = document.getElementById('dateFrom').value;
+  if(from || to) return { start: from || null, end: to || null };
+  if(rangeKey === 'all') return { start: null, end: null };
+  var end = new Date();
+  var start = new Date();
+  start.setDate(start.getDate() - parseInt(rangeKey, 10));
+  return { start: fmtDate(start), end: fmtDate(end) };
 }
 
-// Manually picking a date deselects the presets and — once BOTH dates are
-// set — immediately reloads, no separate Apply button needed.
-function onDateChange(){
-  clearPresetActive();
-  const s = document.getElementById('rangeStart').value;
-  const e = document.getElementById('rangeEnd').value;
-  if(s && e) load();
+function buildParams(){
+  var rangeBtn = document.querySelector('#rangeSegmented button.active');
+  var rangeKey = rangeBtn ? rangeBtn.dataset.range : '30';
+  var r = computeRange(rangeKey);
+  var params = new URLSearchParams();
+  if(r.start) params.set('start', r.start);
+  if(r.end) params.set('end', r.end);
+  return params;
 }
 
-function currentRange(){
-  const s = document.getElementById('rangeStart').value;
-  const e = document.getElementById('rangeEnd').value;
-  let qs = '';
-  if(s) qs += `start=${s}`;
-  if(e) qs += (qs?'&':'') + `end=${e}`;
-  return qs;
-}
-
-function toggleExportMenu(e){
-  e.stopPropagation();
-  document.getElementById('exportMenu').classList.toggle('open');
-}
-document.addEventListener('click', ()=>{
-  document.getElementById('exportMenu').classList.remove('open');
-});
 function exportAs(fmt){
-  const qs = currentRange();
-  window.location = `/api/admin/export?format=${fmt}` + (qs ? '&'+qs : '');
-  document.getElementById('exportMenu').classList.remove('open');
+  var params = buildParams();
+  params.set('format', fmt);
+  window.location = '/api/admin/export?' + params;
 }
 
-async function load(){
+var currentRange = '30';
+document.querySelectorAll('#rangeSegmented button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#rangeSegmented button').forEach(function(b){
+      b.classList.remove('active');
+    });
+    btn.classList.add('active');
+    currentRange = btn.dataset.range;
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    loadAdmin();
+  });
+});
+document.getElementById('dateFrom').addEventListener('change', loadAdmin);
+document.getElementById('dateTo').addEventListener('change', loadAdmin);
+
+const STRENGTH_LABELS = ['Very Weak','Weak','Medium','Strong','Very Strong'];
+const STRENGTH_COLORS = ['#dc2626','#ea580c','#d97706','#059669','#0d9488'];
+const RISK_LABELS = ['Safe','Low Risk','Moderate Risk','High Risk','Critical'];
+const RISK_COLORS  = ['#10B981','#F59E0B','#F97316','#EF4444','#8B5CF6'];
+
+async function loadAdmin(){
+  var params = buildParams();
+  // Skeletons
+  ['aTotal','aAvgEntropy','aBreach','aHighRisk'].forEach(function(id){
+    document.getElementById(id).textContent = '…';
+  });
+  document.getElementById('distBars').innerHTML = '<div class="skeleton" style="height:1.5rem;margin-bottom:.5rem"></div><div class="skeleton" style="height:1.5rem;margin-bottom:.5rem"></div><div class="skeleton" style="height:1.5rem"></div>';
+  document.getElementById('patList').innerHTML = '<div class="skeleton" style="height:1.5rem;margin-bottom:.5rem"></div><div class="skeleton" style="height:1.5rem"></div>';
+  document.getElementById('compareGrid').innerHTML = '';
+  document.getElementById('riskIndicators').innerHTML = '';
+  document.getElementById('riskMatrix').innerHTML = '';
+
   try{
-    const qs = currentRange();
-    const r=await fetch('/api/admin/stats' + (qs ? '?'+qs : ''));
-    if(r.status===302||r.redirected){ window.location='/admin/login'; return; }
-    const d=await r.json();
+    var r = await fetch('/api/admin/stats?' + params);
+    if(r.status === 401 || r.status === 403){ window.location.href = '{{ url_for("admin_login") }}'; return; }
+    var d = await r.json();
+    renderAdmin(d);
 
-    document.getElementById('sTotal').textContent=d.total||0;
-    document.getElementById('sBreach').textContent=d.breached||0;
-    document.getElementById('sRate').textContent=(d.breach_rate||0)+'% breach rate';
-    document.getElementById('sEntropy').textContent=(d.avg_entropy||0)+' bits';
-
-    const dm={}; d.distribution.forEach(x=>dm[x.label]=x.count);
-    const strong=(dm['Strong']||0)+(dm['Very Strong']||0);
-    document.getElementById('sStrong').textContent = d.total?Math.round((strong/d.total)*100)+'%':'0%';
-
-    document.getElementById('distChart').innerHTML = SORDER.map((lbl,i)=>{
-      const cnt=dm[lbl]||0, pct=d.total?Math.round((cnt/d.total)*100):0;
-      return`<div class="brow"><span class="blbl">${lbl}</span>
-        <div class="btrack"><div class="bfill" style="width:${pct||2}%;background:${SCOLORS[i]}">
-        <span class="bpct">${pct}%</span></div></div><span class="bcnt">${cnt}</span></div>`;
-    }).join('');
-
-    const rdm={}; (d.risk_dist||[]).forEach(x=>rdm[x.label]=x.count);
-    const rkeys=['Safe','Low Risk','Moderate Risk','High Risk','Critical'];
-    document.getElementById('riskChart').innerHTML = rkeys.map(lbl=>{
-      const cnt=rdm[lbl]||0, pct=d.total?Math.round((cnt/d.total)*100):0, c=RCOLORS[lbl];
-      return`<div class="brow"><span class="blbl" style="font-size:.68rem">${lbl}</span>
-        <div class="btrack"><div class="bfill" style="width:${pct||2}%;background:${c}">
-        <span class="bpct">${pct}%</span></div></div><span class="bcnt">${cnt}</span></div>`;
-    }).join('');
-
-    const pkeys=['Keyboard-Walk Type','Name+Year Type','Substitution Type','Dictionary-Word Type','Clean'];
-    const pdm={}; (d.profile_dist||[]).forEach(x=>pdm[x.label]=x.count);
-    document.getElementById('profileChart').innerHTML = pkeys.map(lbl=>{
-      const cnt=pdm[lbl]||0, pct=d.total?Math.round((cnt/d.total)*100):0, c=PCOLORS[lbl];
-      return`<div class="brow"><span class="blbl" style="font-size:.66rem">${lbl}</span>
-        <div class="btrack"><div class="bfill" style="width:${pct||2}%;background:${c}">
-        <span class="bpct">${pct}%</span></div></div><span class="bcnt">${cnt}</span></div>`;
-    }).join('');
-
-    const trend = d.breach_trend || [];
-    const maxVal = Math.max(1, ...trend.map(t=>t.breached));
-    document.getElementById('trendChart').innerHTML = trend.length
-      ? `<div class="trend-row">${trend.map(t=>{
-          const h = Math.max(4, Math.round((t.breached/maxVal)*100));
-          const day = t.day ? t.day.slice(5) : '';
-          return `<div style="flex:1;text-align:center">
-            <div class="trend-bar" style="height:${h}px" title="${t.breached} breached / ${t.total} total"></div>
-            <div class="trend-day">${day}</div></div>`;
-        }).join('')}</div>`
-      : '<p style="color:var(--muted);font-size:.8rem;padding:1rem 0">No data in this range yet.</p>';
-
-    const rl = d.range_applied || {};
-    document.getElementById('trendRangeLabel').textContent =
-      (rl.start || rl.end) ? ` (${rangeLabel(rl.start, rl.end)})` : '';
-
-    await loadComparison();
-  }catch(e){console.error(e);}
-}
-
-async function loadComparison(){
-  try{
-    const qs = currentRange();
-    const r = await fetch('/api/admin/compare' + (qs ? '?'+qs : ''));
-    const d = await r.json();
-
-    const curLbl  = rangeLabel(d.current_range.start, d.current_range.end);
-    const prevLbl = rangeLabel(d.previous_range.start, d.previous_range.end);
-    document.getElementById('compareRangeLabel').textContent = `${curLbl}  vs  ${prevLbl}`;
-
-    const metrics = [
-      { key:'total', label:'Total Analyses' },
-      { key:'breached', label:'Breaches Found' },
-      { key:'breach_rate', label:'Breach Rate', fmt:v=>v+'%' },
-      { key:'avg_entropy', label:'Avg Entropy', fmt:v=>v+' bits' }
-    ];
-
-    document.getElementById('compareChart').innerHTML = `<div class="compare-grid">${
-      metrics.map(m=>{
-        const cur = d.current[m.key] || 0;
-        const prev = d.previous[m.key] || 0;
-        const diff = cur - prev;
-        const pct = prev !== 0 ? (diff/prev*100) : (cur>0 ? 100 : 0);
-        const isUp = diff > 0;
-        const isGood = (m.key==='breached'||m.key==='breach_rate') ? !isUp : isUp;
-        const arrow = diff===0 ? '→' : (isUp ? '↑' : '↓');
-        const color = diff===0 ? 'var(--muted,#888)' : (isGood ? '#10b981' : '#ef4444');
-        return `<div class="compare-card">
-          <div class="compare-label">${m.label}</div>
-          <div class="compare-val">${m.fmt?m.fmt(cur):cur}</div>
-          <div class="compare-delta" style="color:${color}">
-            ${arrow} ${Math.abs(pct).toFixed(1)}%
-            <div class="compare-sub">prev: ${m.fmt?m.fmt(prev):prev}</div>
-          </div>
-        </div>`;
-      }).join('')
-    }</div>`;
+    var cmp = await fetch('/api/admin/compare?' + params);
+    if(cmp.ok){ renderCompare(await cmp.json()); }
   }catch(e){
-    console.error('Comparison load error:', e);
-    document.getElementById('compareChart').innerHTML =
-      '<p style="color:var(--muted);font-size:.8rem;padding:1rem 0">Comparison unavailable.</p>';
+    console.error('Admin load failed', e);
+    if (window.bvToast) window.bvToast({ kind: 'danger', message: 'Could not load admin statistics.' });
   }
 }
 
-load();
-setInterval(load,15000);
+function renderAdmin(d){
+  var escapeHTML = window.bvEscapeHTML;
+  document.getElementById('aTotal').textContent = (d.total || 0).toLocaleString();
+  document.getElementById('aAvgEntropy').textContent = (d.avg_entropy !== undefined && d.avg_entropy.toFixed) ? d.avg_entropy.toFixed(2) : (d.avg_entropy ?? 0);
+  document.getElementById('aBreach').textContent = (d.breached || 0).toLocaleString();
+  document.getElementById('aBreachPct').textContent = (d.breach_rate ?? 0) + '% of total';
+
+  var riskMap = {};
+  (d.risk_dist || []).forEach(function(r){ riskMap[r.label] = r.count; });
+  var highRiskCount = (riskMap['High Risk'] || 0) + (riskMap['Critical'] || 0);
+  document.getElementById('aHighRisk').textContent = d.total ? Math.round(highRiskCount / d.total * 100) + '%' : '0%';
+
+  var distMap = {};
+  (d.distribution || []).forEach(function(r){ distMap[r.label] = r.count; });
+  var total = Object.values(distMap).reduce(function(a,b){return a+b;}, 0) || 1;
+  document.getElementById('distBars').innerHTML = STRENGTH_LABELS.map(function(l, i){
+    var cnt = distMap[l] || 0;
+    var pct = Math.round((cnt/total)*100);
+    return '<div class="brow">'+
+      '<div class="blbl">'+l+'</div>'+
+      '<div class="btrack"><div class="bfill" style="width:'+pct+'%;background:'+STRENGTH_COLORS[i]+'"></div><div class="bpct">'+pct+'%</div></div>'+
+      '<div class="bcnt">'+cnt+'</div>'+
+    '</div>';
+  }).join('');
+
+  var profiles = (d.profile_dist || []).filter(function(p){return p.count > 0;});
+  document.getElementById('patList').innerHTML = profiles.length
+    ? profiles.map(function(p){ return '<div class="pat-item"><span class="pat-name">'+escapeHTML(p.label)+'</span><span class="pat-cnt">'+Number(p.count)+'</span></div>'; }).join('')
+    : '<div class="empty-state"><div class="empty-title">No analyses yet</div><p class="empty-hint">Encourage your users to run a guest analysis to populate this report.</p></div>';
+
+  renderRiskTrend(d.breach_trend || []);
+  renderRiskIndicators(d, riskMap, profiles);
+  renderRiskMatrix(d, profiles);
+}
+
+var riskTrendChart = null;
+
+function renderRiskTrend(rows){
+  var canvas = document.getElementById('riskTrendChart');
+  if (riskTrendChart) riskTrendChart.destroy();
+  riskTrendChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: rows.map(function(row){ return row.day; }),
+      datasets: [{
+        label: 'Breach exposure rate',
+        data: rows.map(function(row){ return row.total ? Math.round(row.breached / row.total * 1000) / 10 : 0; }),
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139,92,246,.10)',
+        fill: true,
+        tension: .3,
+        pointRadius: rows.length > 31 ? 0 : 3,
+        pointHoverRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: function(value){ return value + '%'; } } },
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } }
+      }
+    }
+  });
+}
+
+function renderRiskIndicators(d, riskMap, profiles){
+  var total = d.total || 0;
+  var dominant = profiles.length ? profiles.slice().sort(function(a,b){ return b.count-a.count; })[0] : null;
+  var highCritical = (riskMap['High Risk'] || 0) + (riskMap['Critical'] || 0);
+  var indicators = [
+    {label:'Leading pattern', value:dominant ? dominant.label.replace(' Type','') : 'No data', note:dominant && total ? Math.round(dominant.count/total*100)+'% of analyses' : 'No analyses available'},
+    {label:'Breach exposure', value:(d.breach_rate || 0)+'%', note:(d.breached || 0)+' known exposures'},
+    {label:'High or critical', value:total ? Math.round(highCritical/total*100)+'%' : '0%', note:highCritical+' analyses'},
+    {label:'Average entropy', value:Number(d.avg_entropy || 0).toFixed(2), note:'bits across all analyses'}
+  ];
+  document.getElementById('riskIndicators').innerHTML = indicators.map(function(item){
+    return '<div class="risk-kpi"><span>'+item.label+'</span><strong>'+item.value+'</strong><small>'+item.note+'</small></div>';
+  }).join('');
+}
+
+function renderRiskMatrix(d, profiles){
+  var total = d.total || 0;
+  var issues = profiles.filter(function(p){ return p.label !== 'Clean'; }).map(function(p){
+    var pct = total ? Math.round(p.count/total*100) : 0;
+    return { issue:p.label.replace(' Type',''), prevalence:pct, severity:pct >= 40 ? 'High' : (pct >= 15 ? 'Moderate' : 'Low') };
+  });
+  if ((d.breached || 0) > 0) issues.push({issue:'Known breach exposure', prevalence:d.breach_rate || 0, severity:(d.breach_rate || 0) >= 40 ? 'Critical' : 'High'});
+  issues.sort(function(a,b){ return b.prevalence-a.prevalence; });
+  document.getElementById('riskMatrix').innerHTML = issues.length ?
+    '<div class="risk-matrix-head"><span>Issue</span><span>Prevalence</span><span>Severity</span><span>Priority</span></div>'+
+    issues.map(function(item){
+      var priority = item.severity === 'Critical' ? 'Immediate' : (item.severity === 'High' ? 'High' : (item.severity === 'Moderate' ? 'Medium' : 'Monitor'));
+      var cls = item.severity.toLowerCase();
+      return '<div class="risk-matrix-row"><strong>'+item.issue+'</strong><span>'+item.prevalence+'%</span><span class="matrix-badge '+cls+'">'+item.severity+'</span><span>'+priority+'</span></div>';
+    }).join('') : '<div class="empty-state"><div class="empty-title">No risks identified</div><p class="empty-hint">Risk data will appear after analyses are completed.</p></div>';
+}
+
+function renderCompare(d){
+  var cur = d.current || {};
+  var prev = d.previous || {};
+
+  function pctDelta(c, p){
+    if(!p) return c ? 100 : 0;
+    return Math.round(((c - p) / p) * 100);
+  }
+
+  var rows = [
+    { label: 'Total analyses', cur: cur.total ?? 0, prev: prev.total ?? 0 },
+    { label: 'Avg entropy',    cur: cur.avg_entropy ?? 0, prev: prev.avg_entropy ?? 0, decimals: 2 },
+    { label: 'Breach rate',    cur: (cur.breach_rate ?? 0) + '%', prev: prev.breach_rate ?? 0, raw_cur: cur.breach_rate ?? 0 },
+    { label: 'Breached count', cur: cur.breached ?? 0, prev: prev.breached ?? 0 }
+  ];
+
+  document.getElementById('compareGrid').innerHTML = rows.map(function(row){
+    var curRaw = row.raw_cur !== undefined ? row.raw_cur : row.cur;
+    var delta = pctDelta(curRaw, row.prev);
+    var cls = delta > 0 ? 'text-success' : (delta < 0 ? 'text-danger' : 'text-text-muted');
+    var displayVal = row.decimals ? Number(row.cur).toFixed(row.decimals) : row.cur;
+    return '<div class="compare-card">'+
+      '<div class="compare-label">'+row.label+'</div>'+
+      '<div class="compare-val">'+displayVal+'</div>'+
+      '<div class="compare-delta '+cls+'">'+(delta > 0 ? '+' : '')+delta+'% vs. previous period</div>'+
+    '</div>';
+  }).join('');
+}
+
+loadAdmin();
 </script>
-</body>
-</html>
+{% endblock %}

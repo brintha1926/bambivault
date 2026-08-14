@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+{% include '_shared_head.html' %}
+<title>{% block title %}BambiVault{% endblock %}</title>
+{% block extra_head %}{% endblock %}
+</head>
+<body class="font-sans text-text-primary antialiased">
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<div id="bv-toast-stack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
+
+<div class="app-shell" x-data="bvDrawer">
+
+    <!-- Mobile drawer overlay -->
+    <div x-show="sidebarOpen"
+         @click="closeDrawer()"
+         x-transition.opacity
+         class="fixed inset-0 bg-black/50 z-30 md:hidden"
+         x-cloak></div>
+
+    <!-- Sidebar -->
+    <aside id="primary-nav"
+           x-ref="drawer"
+           aria-label="Primary navigation"
+           :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:flex'"
+           :aria-hidden="(sidebarOpen ? 'false' : (isDesktop ? 'false' : 'true'))"
+           :inert="(!sidebarOpen && !isDesktop) ? true : null"
+           class="sidebar -translate-x-full md:translate-x-0 flex fixed inset-y-0 left-0 z-40 transition-transform duration-300 md:sticky md:flex"
+           x-cloak>
+        <div class="sidebar-brand">
+            <a href="{{ url_for('index') }}" class="sidebar-brand-link" aria-label="BambiVault home">
+                <span class="brand-icon"><i data-lucide="shield-check" class="w-5 h-5"></i></span>
+                <span class="brand-name">Bambi<span class="brand-acc">Vault</span></span>
+            </a>
+        </div>
+
+        <nav class="sidebar-section" aria-label="Primary">
+            {# Administrator navigation is rendered only for administrator sessions. #}
+            {% if session.get('is_admin') %}
+            <a href="{{ url_for('admin') }}"
+               @click="navClick()"
+               class="sidebar-link
+                      {% if request.path == '/admin' %}is-active{% endif %}"
+               {% if request.path == '/admin' %}aria-current="page"{% endif %}>
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i><span>Analytics</span>
+            </a>
+            <a href="{{ url_for('admin_settings') }}"
+               @click="navClick()"
+               class="sidebar-link {% if request.path == '/admin/settings' %}is-active{% endif %}"
+               {% if request.path == '/admin/settings' %}aria-current="page"{% endif %}>
+                <i data-lucide="shield-check" class="w-5 h-5"></i><span>Security</span>
+            </a>
+            {% endif %}
+            {% if session.get('user_id') %}
+            <a href="{{ url_for('dashboard') }}"
+               @click="navClick()"
+               class="sidebar-link
+                      {% if request.path == '/dashboard' %}is-active{% endif %}"
+               {% if request.path == '/dashboard' %}aria-current="page"{% endif %}>
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Overview</span>
+            </a>
+            {% endif %}
+            <a href="{{ url_for('analyser_page') }}"
+               @click="navClick()"
+               class="sidebar-link
+                      {% if request.path == '/analyser' %}is-active{% endif %}"
+               {% if request.path == '/analyser' %}aria-current="page"{% endif %}>
+                <i data-lucide="scan-line" class="w-5 h-5"></i><span>Analyser</span>
+            </a>
+            {% if session.get('user_id') %}
+            <a href="{{ url_for('vault_page') }}"
+               @click="navClick()"
+               class="sidebar-link
+                      {% if request.path == '/vault' %}is-active{% endif %}"
+               {% if request.path == '/vault' %}aria-current="page"{% endif %}>
+                <i data-lucide="lock" class="w-5 h-5"></i><span>Vault</span>
+            </a>
+            <a href="{{ url_for('database') }}"
+               @click="navClick()"
+               class="sidebar-link
+                      {% if request.path == '/database' %}is-active{% endif %}"
+               {% if request.path == '/database' %}aria-current="page"{% endif %}>
+                <i data-lucide="database" class="w-5 h-5"></i><span>History</span>
+            </a>
+            <a href="{{ url_for('vault_bp.settings_page') }}"
+               @click="navClick()"
+               class="sidebar-link
+                      {% if request.path == '/settings' %}is-active{% endif %}"
+               {% if request.path == '/settings' %}aria-current="page"{% endif %}>
+                <i data-lucide="settings" class="w-5 h-5"></i><span>Settings</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer">
+            {% if not session.get('is_admin') and not session.get('user_id') %}
+            <a href="{{ url_for('login') }}" class="sidebar-link">
+                <i data-lucide="log-in" class="w-5 h-5"></i><span>Sign in</span>
+            </a>
+            <a href="{{ url_for('register') }}" class="sidebar-link">
+                <i data-lucide="user-plus" class="w-5 h-5"></i><span>Register</span>
+            </a>
+            {% endif %}
+        </div>
+    </aside>
+
+    <div class="main">
+        <!-- Top bar -->
+        <header class="topbar" role="banner">
+            <button @click="openDrawer()"
+                    data-drawer-toggle
+                    :aria-expanded="sidebarOpen.toString()"
+                    aria-controls="primary-nav"
+                    aria-label="Open navigation menu"
+                    class="drawer-toggle">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+
+            <form class="topbar-search hidden sm:block" onsubmit="return submitGlobalSearch(event)">
+                <i data-lucide="search" class="search-icon w-4 h-4"></i>
+                <input id="globalSearch" type="search" name="bv_search_query" placeholder="Search your history — press Enter"
+                       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                       data-lpignore="true" data-form-type="other" aria-label="Search your history">
+                <button type="button" class="search-clear" aria-label="Clear search" data-search-clear>×</button>
+            </form>
+
+            <div class="topbar-actions">
+                {% if session.get('user_id') %}
+                <div class="relative" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
+                    <button @click="open = !open"
+                            :aria-expanded="open.toString()"
+                            aria-controls="user-menu"
+                            aria-label="Account menu"
+                            class="topbar-avatar-btn">
+                        <span class="topbar-avatar" id="navAvatar">U</span>
+                        <span class="topbar-username" id="navUsername">Member</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-text-muted"></i>
+                    </button>
+                    <div id="user-menu"
+                         x-show="open"
+                         x-transition
+                         x-cloak
+                         class="topbar-menu">
+                        <div class="topbar-menu-header">
+                            <p id="navUsernameMenu">Member</p>
+                            <small id="navEmail"></small>
+                        </div>
+                        <a href="{{ url_for('vault_bp.settings_page') }}"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
+                        <a href="{{ url_for('logout') }}" class="danger-link"><i data-lucide="log-out" class="w-4 h-4"></i>Log out</a>
+                    </div>
+                </div>
+                {% elif session.get('is_admin') %}
+                <div class="relative" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
+                    <button @click="open = !open"
+                            :aria-expanded="open.toString()"
+                            aria-controls="admin-menu"
+                            aria-label="Administrator menu"
+                            class="topbar-avatar-btn">
+                        <span class="topbar-avatar">A</span>
+                        <span class="topbar-username">Administrator</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-text-muted"></i>
+                    </button>
+                    <div id="admin-menu"
+                         x-show="open"
+                         x-transition
+                         x-cloak
+                         class="topbar-menu">
+                        <div class="topbar-menu-header">
+                            <p>Administrator</p>
+                            <small>Institutional access</small>
+                        </div>
+                        <a href="{{ url_for('admin_settings') }}"><i data-lucide="settings" class="w-4 h-4"></i>Security settings</a>
+                        <a href="{{ url_for('admin_logout') }}" class="danger-link"><i data-lucide="log-out" class="w-4 h-4"></i>Admin logout</a>
+                    </div>
+                </div>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-secondary btn-sm">
+                    <i data-lucide="log-in" class="w-4 h-4"></i>Sign in
+                </a>
+                {% endif %}
+            </div>
+        </header>
+
+        <main id="main-content" tabindex="-1" class="page-body">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', function() {
+  Alpine.data('bvDrawer', function() {
+    return {
+      sidebarOpen: false,
+      isDesktop: false,
+      lastFocus: null,
+      mq: null,
+      init() {
+        var self = this;
+        this.mq = window.matchMedia('(min-width: 768px)');
+        this.syncDesktop(this.mq);
+        this.mq.addEventListener('change', function(e) { self.syncDesktop(e); });
+      },
+      syncDesktop(e) {
+        var wasDesktop = this.isDesktop;
+        this.isDesktop = !!(e.matches);
+        if (this.isDesktop && !wasDesktop) this.sidebarOpen = false;
+      },
+      getFocusable() {
+        var sel = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+        return Array.from(this.$refs.drawer.querySelectorAll(sel));
+      },
+      openDrawer() {
+        this.lastFocus = document.activeElement;
+        this.sidebarOpen = true;
+        var self = this;
+        this.$nextTick(function() {
+          var f = self.getFocusable();
+          if (f.length) f[0].focus();
+        });
+      },
+      closeDrawer() {
+        this.sidebarOpen = false;
+        var self = this;
+        this.$nextTick(function() {
+          if (self.lastFocus && typeof self.lastFocus.focus === 'function') self.lastFocus.focus();
+        });
+      },
+      trapTab(e) {
+        if (e.key !== 'Tab') return;
+        var f = this.getFocusable();
+        if (!f.length) return;
+        var first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      },
+      navClick() {
+        if (!this.isDesktop) this.closeDrawer();
+      }
+    };
+  });
+});
+
+/* Global keydown: Escape closes drawer, Tab contains focus when open */
+document.addEventListener('keydown', function(e) {
+  var drawer = document.getElementById('primary-nav');
+  if (!drawer) return;
+  var open = drawer.getAttribute('aria-hidden') === 'false';
+  if (e.key === 'Escape' && open) {
+    var root = document.querySelector('[x-data="bvDrawer"]');
+    if (root && root._x_dataStack) {
+      root._x_dataStack[0].closeDrawer();
+    } else {
+      drawer.setAttribute('aria-hidden', 'true');
+    }
+  }
+}, true);
+
+/* Global search: Enter submits to /database with q= */
+function submitGlobalSearch(e) {
+  var input = document.getElementById('globalSearch');
+  if (!input || !input.value.trim()) return false;
+  window.location.href = '{{ url_for("database") }}?q=' + encodeURIComponent(input.value.trim());
+  return false;
+}
+
+/* Show/hide the search clear button */
+(function() {
+  var input = document.getElementById('globalSearch');
+  var form = input && input.closest('.topbar-search');
+  var clear = form && form.querySelector('[data-search-clear]');
+  if (!input || !clear) return;
+  var sync = function() { form.classList.toggle('has-value', input.value.length > 0); };
+  input.addEventListener('input', sync);
+  clear.addEventListener('click', function() { input.value = ''; sync(); input.focus(); });
+  sync();
+})();
+
+lucide.createIcons();
+
+{% if session.get('user_id') %}
+/* Populate the avatar / username / email from /api/account/status */
+(async function() {
+  try {
+    var r = await fetch('/api/account/status');
+    var d = await r.json();
+    if (!d.logged_in) return;
+    var initial = (d.username || 'U')[0].toUpperCase();
+    var av = document.getElementById('navAvatar');     if (av) av.textContent = initial;
+    var un = document.getElementById('navUsername');   if (un) un.textContent = d.username || 'Member';
+    var um = document.getElementById('navUsernameMenu'); if (um) um.textContent = d.username || 'Member';
+    var em = document.getElementById('navEmail');       if (em) em.textContent = d.email || '';
+  } catch (e) { /* keep defaults */ }
+})();
+{% endif %}
+
+/* Toast notifications */
+(function() {
+  if (window.bvToast) return;
+  function ensureStack() {
+    var s = document.getElementById('bv-toast-stack');
+    if (!s) {
+      s = document.createElement('div');
+      s.id = 'bv-toast-stack';
+      s.className = 'toast-stack';
+      s.setAttribute('aria-live', 'polite');
+      s.setAttribute('aria-atomic', 'false');
+      document.body.appendChild(s);
+    }
+    return s;
+  }
+  function bvToast(opts) {
+    opts = opts || {};
+    var kind = opts.kind || 'info';
+    var message = opts.message || '';
+    var stack = ensureStack();
+    var t = document.createElement('div');
+    t.className = 'toast toast-' + kind;
+    var span = document.createElement('span');
+    span.textContent = message;
+    var close = document.createElement('button');
+    close.className = 'toast-close';
+    close.setAttribute('aria-label', 'Dismiss notification');
+    close.textContent = '×';
+    close.addEventListener('click', function() { t.remove(); });
+    t.appendChild(span);
+    t.appendChild(close);
+    stack.appendChild(t);
+    var timer = null;
+    function start() { stop(); timer = setTimeout(function() { t.remove(); }, 4000); }
+    function stop()  { if (timer) { clearTimeout(timer); timer = null; } }
+    t.addEventListener('mouseenter', stop);
+    t.addEventListener('mouseleave', start);
+    t.addEventListener('focusin', stop);
+    t.addEventListener('focusout', start);
+    start();
+  }
+  window.bvToast = bvToast;
+})();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

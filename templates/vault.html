@@ -1,0 +1,1130 @@
+{% extends "base.html" %}
+
+{% block title %}Vault — BambiVault{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vault.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="vault-root">
+
+  <!-- LOADING -->
+  <div id="vault-loading" class="vault-state-loading">
+    <div class="skeleton" style="height:2rem;width:160px;margin-bottom:.5rem;"></div>
+    <div class="skeleton" style="height:1rem;width:260px;margin-bottom:2rem;"></div>
+    <div class="vault-health-grid">
+      <div class="skeleton" style="height:84px;border-radius:8px;"></div>
+      <div class="skeleton" style="height:84px;border-radius:8px;"></div>
+      <div class="skeleton" style="height:84px;border-radius:8px;"></div>
+      <div class="skeleton" style="height:84px;border-radius:8px;"></div>
+    </div>
+    <div class="skeleton" style="height:48px;border-radius:8px;margin-top:1.5rem;"></div>
+    <div class="skeleton" style="height:280px;border-radius:14px;margin-top:1rem;"></div>
+  </div>
+
+  <!-- SETUP -->
+  <div id="vault-setup" class="hidden">
+    <div class="vault-state-card-wide">
+      <div class="state-icon setup">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+      </div>
+      <h2>Set up your vault</h2>
+      <p class="state-desc">Create a master password to encrypt and store your credentials. This is separate from your login password.</p>
+
+      <form id="setup-form" autocomplete="off">
+        <div class="field">
+          <label class="field-label" for="setup-master-pw">Master password</label>
+          <div class="pw-input-wrap">
+            <input type="password" id="setup-master-pw" class="input" autocomplete="new-password" minlength="8" required>
+            <button type="button" class="pw-toggle" aria-label="Show password" data-target="setup-master-pw">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="field-hint">Minimum 8 characters. Must differ from your login password.</div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="setup-confirm-pw">Confirm master password</label>
+          <div class="pw-input-wrap">
+            <input type="password" id="setup-confirm-pw" class="input" autocomplete="new-password" minlength="8" required>
+            <button type="button" class="pw-toggle" aria-label="Show password" data-target="setup-confirm-pw">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="vault-err" id="setup-error" role="alert"></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="setup-submit">Create Vault</button>
+      </form>
+
+      <div class="vault-key-info-list">
+        <div class="vault-key-info-item">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="M21 2v6h-6"/><path d="M3.6 13.5 6 11l-2.4-2.4a2 2 0 0 1 0-2.8l2.2-2.2a2 2 0 0 1 2.8 0L11 6l2.4-2.4a2 2 0 0 1 2.8 0l.5.5-7.2 7.2-.5-.5a2 2 0 0 0-2.8 0l-2.2 2.2a2 2 0 0 0 0 2.8L3.6 13.5z"/></svg>
+          <span>Your Account Key is created during setup and shown once.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOCKED -->
+  <div id="vault-locked" class="hidden">
+    <div class="vault-state-card-wide">
+      <div class="state-icon locked">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h2>Unlock your vault</h2>
+      <p class="state-desc">Enter your master password and Account Key to access saved credentials.</p>
+
+      <form id="unlock-form" autocomplete="off">
+        <div class="field">
+          <label class="field-label" for="unlock-master-pw">Master password</label>
+          <div class="pw-input-wrap">
+            <input type="password" id="unlock-master-pw" class="input" autocomplete="current-password" required>
+            <button type="button" class="pw-toggle" aria-label="Show password" data-target="unlock-master-pw">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="unlock-account-key">Account Key</label>
+          <input type="text" id="unlock-account-key" class="input mono" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" autocomplete="off" required>
+          <div class="field-hint">The 20-character key shown when you set up your vault.</div>
+        </div>
+        <div class="vault-err" id="unlock-error" role="alert"></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="unlock-submit">Unlock Vault</button>
+      </form>
+
+      <div class="divider">or</div>
+      <button type="button" class="btn btn-ghost btn-block" id="btn-reset-vault-locked">Reset Vault</button>
+      <p class="text-center text-sm muted mt-1">Reset wipes all entries and lets you start over.</p>
+    </div>
+  </div>
+
+  <!-- UNLOCKED -->
+  <div id="vault-unlocked" class="hidden">
+
+    <!-- Header -->
+    <div class="vault-header">
+      <div class="vault-header-info">
+        <h1 class="vault-header-title">Vault</h1>
+        <p class="vault-header-sub">Encrypted credential storage</p>
+      </div>
+      <div class="vault-header-actions">
+        <span class="vault-status-badge unlocked" id="vault-status-badge">
+          <span class="status-dot"></span>
+          <span>Unlocked</span>
+        </span>
+        <button class="btn btn-secondary btn-sm" id="btn-lock" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Lock
+        </button>
+        <div class="vault-export-wrap">
+          <button class="btn btn-secondary btn-sm" id="btn-export" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            Export
+          </button>
+          <div class="vault-export-menu" id="export-menu" role="menu">
+            <button type="button" id="export-pdf" role="menuitem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+              PDF (encrypted)
+            </button>
+            <button type="button" id="export-zip" role="menuitem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12v2"/><path d="M10 16v2"/></svg>
+              ZIP (encrypted)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vault Health -->
+    <div class="vault-health-panel" id="vault-health-panel">
+      <div class="vault-health-header">
+        <div class="vault-health-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+          Vault Health
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-health-refresh" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+          Refresh
+        </button>
+      </div>
+      <div class="vault-health-grid">
+        <div class="vault-health-stat total">
+          <div class="stat-label">Total Entries</div>
+          <div class="stat-value" id="health-total">—</div>
+        </div>
+        <div class="vault-health-stat weak">
+          <div class="stat-label">Weak</div>
+          <div class="stat-value" id="health-weak">—</div>
+        </div>
+        <div class="vault-health-stat breached">
+          <div class="stat-label">Breached</div>
+          <div class="stat-value" id="health-breached">—</div>
+        </div>
+        <div class="vault-health-stat reused">
+          <div class="stat-label">Reused</div>
+          <div class="stat-value" id="health-reused">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="vault-toolbar">
+      <div class="vault-search">
+        <span class="search-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <input type="text" id="search-input" placeholder="Search by site, username, or email" aria-label="Search credentials">
+      </div>
+      <select class="vault-filter" id="filter-select" aria-label="Sort entries">
+        <option value="name-asc">Name (A→Z)</option>
+        <option value="name-desc">Name (Z→A)</option>
+        <option value="date-desc">Newest first</option>
+        <option value="date-asc">Oldest first</option>
+      </select>
+      <button class="btn btn-primary btn-sm" id="btn-add-entry" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        Add Entry
+      </button>
+    </div>
+
+    <!-- Add Entry Form -->
+    <div id="add-form-wrap" class="vault-form-section hidden">
+      <div class="vault-form-section-header">
+        <div class="vault-form-section-title">Add New Entry</div>
+        <button type="button" class="btn btn-ghost btn-sm" id="add-cancel">Cancel</button>
+      </div>
+      <form id="add-form" autocomplete="off">
+        <div class="vault-form-grid">
+          <div class="field">
+            <label class="field-label" for="add-site-name">Site name <span class="req">*</span></label>
+            <input type="text" id="add-site-name" class="input" placeholder="e.g. GitHub" required>
+          </div>
+          <div class="field">
+            <label class="field-label" for="add-username">Username</label>
+            <input type="text" id="add-username" class="input" placeholder="e.g. octocat">
+          </div>
+          <div class="field full">
+            <label class="field-label" for="add-email">Email</label>
+            <input type="email" id="add-email" class="input" placeholder="e.g. user@example.com">
+          </div>
+          <div class="field full">
+            <label class="field-label" for="add-password">Password <span class="req">*</span></label>
+            <div class="pw-input-wrap">
+              <input type="password" id="add-password" class="input" placeholder="Enter password" required>
+              <button type="button" class="pw-toggle" aria-label="Show password" data-target="add-password">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="vault-err" id="add-error" role="alert"></div>
+        <button type="submit" class="btn btn-primary" id="add-submit">Save Entry</button>
+      </form>
+    </div>
+
+    <!-- Entry List -->
+    <div class="vault-entry-list" id="entry-list" aria-live="polite"></div>
+    <div class="entry-count" id="entry-count"></div>
+
+    <!-- Settings -->
+    <div class="vault-form-section vault-settings-section">
+      <div class="vault-form-section-header">
+        <div class="vault-form-section-title">Vault Settings</div>
+      </div>
+      <div class="vault-settings-row">
+        <div class="vault-settings-info">
+          <div class="vault-settings-label">Reset Vault</div>
+          <div class="vault-settings-desc">Permanently delete all entries and reconfigure. Requires master password and Account Key.</div>
+        </div>
+        <button class="btn btn-danger btn-sm" id="btn-reset-vault-settings" type="button">Reset Vault</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS (Native Dialogs) -->
+
+<!-- Account Key Modal -->
+<dialog class="vault-modal" id="modal-account-key" aria-labelledby="ak-title">
+  <div class="modal-content">
+    <h2 class="modal-title" id="ak-title">Save your Account Key</h2>
+    <div class="modal-body">
+      This key is required every time you unlock your vault. It cannot be recovered or reset.
+      <div class="vault-key-display" id="account-key-display">—</div>
+      <div class="vault-key-info-list">
+        <div class="vault-key-info-item">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Write it down or store it in a separate secure location.</span>
+        </div>
+        <div class="vault-key-info-item">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+          <span>Do not share it with anyone. BambiVault support will never ask for it.</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" id="account-key-copy" type="button">Copy Key</button>
+      <button class="btn btn-primary btn-sm" id="account-key-confirm" type="button">I've Saved It</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Delete Confirmation Modal -->
+<dialog class="vault-modal" id="modal-delete" aria-labelledby="del-title">
+  <div class="modal-content">
+    <h2 class="modal-title" id="del-title">Delete entry?</h2>
+    <div class="modal-body">
+      This permanently deletes the entry for <strong id="delete-site-name">—</strong>. This action cannot be undone.
+      <div class="vault-err mt-1" id="delete-error" role="alert"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" id="delete-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="delete-confirm" type="button">Delete Entry</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Reset Vault Modal -->
+<dialog class="vault-modal" id="modal-reset" aria-labelledby="reset-title">
+  <div class="modal-content">
+    <h2 class="modal-title" id="reset-title">Reset Vault</h2>
+    <div class="modal-body">
+      All entries will be permanently deleted. You will set up a new vault with a new master password and Account Key.
+      <form id="reset-form" autocomplete="off" class="mt-2">
+        <div class="field">
+          <label class="field-label" for="reset-master-pw">Master password</label>
+          <div class="pw-input-wrap">
+            <input type="password" id="reset-master-pw" class="input" autocomplete="current-password" required>
+            <button type="button" class="pw-toggle" aria-label="Show password" data-target="reset-master-pw">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="reset-account-key">Account Key</label>
+          <input type="text" id="reset-account-key" class="input mono" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" autocomplete="off" required>
+        </div>
+        <div class="vault-err" id="reset-error" role="alert"></div>
+      </form>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" id="reset-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="reset-confirm" type="submit" form="reset-form">Reset Vault</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Edit Entry Modal -->
+<dialog class="vault-modal" id="modal-edit" aria-labelledby="edit-title">
+  <div class="modal-content" style="max-width:520px;">
+    <h2 class="modal-title" id="edit-title">Edit Entry</h2>
+    <form id="edit-form" autocomplete="off">
+      <div class="vault-form-grid">
+        <div class="field">
+          <label class="field-label" for="edit-site-name">Site name <span class="req">*</span></label>
+          <input type="text" id="edit-site-name" class="input" required>
+        </div>
+        <div class="field">
+          <label class="field-label" for="edit-username">Username</label>
+          <input type="text" id="edit-username" class="input">
+        </div>
+        <div class="field full">
+          <label class="field-label" for="edit-email">Email</label>
+          <input type="email" id="edit-email" class="input">
+        </div>
+        <div class="field full">
+          <label class="field-label" for="edit-password">New Password</label>
+          <div class="pw-input-wrap">
+            <input type="password" id="edit-password" class="input" placeholder="Leave blank to keep current">
+            <button type="button" class="pw-toggle" aria-label="Show password" data-target="edit-password">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="field-hint">Only fill this in if you want to change the existing password.</div>
+        </div>
+      </div>
+      <div class="vault-err" id="edit-error" role="alert"></div>
+      <div class="modal-actions mt-2">
+        <button type="button" class="btn btn-secondary btn-sm" id="edit-cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="edit-submit">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<!-- Export Modal -->
+<dialog class="vault-modal" id="modal-export" aria-labelledby="exp-title">
+  <div class="modal-content">
+    <h2 class="modal-title" id="exp-title">Encrypted Export</h2>
+    <form id="export-form" autocomplete="off">
+      <div class="modal-body">
+        Choose a protection password for the exported file. You will need it to open the file later.
+        <input type="hidden" id="export-format" value="pdf">
+        <div class="field mt-1">
+          <label class="field-label" for="export-password">Protection password</label>
+          <div class="pw-input-wrap">
+            <input type="password" id="export-password" class="input" minlength="6" required>
+            <button type="button" class="pw-toggle" aria-label="Show password" data-target="export-password">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="field-hint">Minimum 6 characters. This password is not stored.</div>
+        </div>
+        <div class="vault-err" id="export-error" role="alert"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="export-cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="export-submit">Download</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<script>
+(function() {
+  'use strict';
+
+  /* SVG Icon Constants */
+  var SVG = {
+    eye: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>',
+    eyeOff: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>',
+    copy: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>',
+    edit: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>',
+    trash: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>'
+  };
+
+  /* State */
+  var vaultState = 'loading';
+  var entries = [];
+  var healthData = null;
+  var searchQuery = '';
+  var sortMode = 'name-asc';
+  var revealedPasswords = {};
+  var editingEntryId = null;
+  var pendingDeleteId = null;
+  var autoLockInterval = null;
+
+  /* DOM shorthand */
+  function $(id) { return document.getElementById(id); }
+
+  /* Toast (Reuse Global System) */
+  function showToast(message, type) {
+    if (typeof window.bvToast === 'function') {
+      window.bvToast({ kind: type || 'info', message: message });
+    } else {
+      console.warn('bvToast not found:', message);
+    }
+  }
+
+  /* API Helper */
+  function api(url, options) {
+    options = options || {};
+    return fetch(url, Object.assign({
+      headers: { 'Content-Type': 'application/json' }
+    }, options)).then(function(res) {
+      if (res.status === 401) {
+        window.location.href = '/login';
+        throw new Error('Session expired');
+      }
+      return res.json().catch(function() { return {}; }).then(function(data) {
+        if (!res.ok) {
+          var err = new Error(data.error || 'Request failed (' + res.status + ')');
+          err.status = res.status;
+          err.data = data;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  /* Escape HTML */
+  function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  /* Clipboard Helper */
+  function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function(resolve, reject) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); resolve(); }
+      catch (e) { reject(e); }
+      finally { ta.remove(); }
+    });
+  }
+
+  /* State Switching */
+  function showState(state) {
+    vaultState = state;
+    $('vault-loading').classList.toggle('hidden', state !== 'loading');
+    $('vault-setup').classList.toggle('hidden', state !== 'setup');
+    $('vault-locked').classList.toggle('hidden', state !== 'locked');
+    $('vault-unlocked').classList.toggle('hidden', state !== 'unlocked');
+  }
+
+  function handleVaultLocked() {
+    Object.keys(revealedPasswords).forEach(function(id) { concealPassword(parseInt(id)); });
+    revealedPasswords = {};
+    showState('locked');
+    stopAutoLockCheck();
+    showToast('Vault has been locked', 'info');
+  }
+
+  /* Status Check */
+  function checkStatus() {
+    return api('/api/account/status').then(function(data) {
+      if (!data.logged_in) { window.location.href = '/login'; return; }
+      if (!data.vault_configured) {
+        showState('setup');
+      } else if (!data.vault_unlocked) {
+        showState('locked');
+      } else {
+        showState('unlocked');
+        Promise.all([loadEntries(), loadHealth()]).then(function() {
+          startAutoLockCheck();
+        });
+      }
+    }).catch(function(err) {
+      if (err.message !== 'Session expired') {
+        showToast(err.message, 'danger');
+        showState('locked');
+      }
+    });
+  }
+
+  function checkVaultStillUnlocked() {
+    if (vaultState !== 'unlocked') return;
+    api('/api/account/status').then(function(data) {
+      if (!data.vault_unlocked) handleVaultLocked();
+    }).catch(function() {});
+  }
+
+  /* Setup */
+  function handleSetup(e) {
+    e.preventDefault();
+    var masterPw = $('setup-master-pw').value;
+    var confirmPw = $('setup-confirm-pw').value;
+    $('setup-error').textContent = '';
+    if (masterPw.length < 8) {
+      $('setup-error').textContent = 'Master password must be at least 8 characters.';
+      return;
+    }
+    if (masterPw !== confirmPw) {
+      $('setup-error').textContent = 'Master passwords do not match.';
+      return;
+    }
+    var btn = $('setup-submit');
+    btn.disabled = true;
+    btn.textContent = 'Setting up...';
+    api('/api/vault/setup', {
+      method: 'POST',
+      body: JSON.stringify({ master_password: masterPw, confirm: confirmPw })
+    }).then(function(data) {
+      $('account-key-display').textContent = data.account_key;
+      openModal('modal-account-key');
+      $('setup-master-pw').value = '';
+      $('setup-confirm-pw').value = '';
+    }).catch(function(err) {
+      $('setup-error').textContent = err.message;
+    }).finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Create Vault';
+    });
+  }
+
+  function confirmAccountKeySaved() {
+    closeModal('modal-account-key');
+    showState('loading');
+    checkStatus();
+    showToast('Vault created', 'success');
+  }
+
+  /* Unlock */
+  function handleUnlock(e) {
+    e.preventDefault();
+    var masterPw = $('unlock-master-pw').value;
+    var accountKey = $('unlock-account-key').value;
+    $('unlock-error').textContent = '';
+    var btn = $('unlock-submit');
+    btn.disabled = true;
+    btn.textContent = 'Unlocking...';
+    api('/api/vault/unlock', {
+      method: 'POST',
+      body: JSON.stringify({ master_password: masterPw, account_key: accountKey })
+    }).then(function() {
+      $('unlock-master-pw').value = '';
+      $('unlock-account-key').value = '';
+      showState('unlocked');
+      Promise.all([loadEntries(), loadHealth()]).then(function() {
+        startAutoLockCheck();
+      });
+      showToast('Vault unlocked', 'success');
+    }).catch(function(err) {
+      $('unlock-error').textContent = err.message;
+    }).finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Unlock Vault';
+    });
+  }
+
+  /* Lock */
+  function handleLock() {
+    api('/api/vault/lock', { method: 'POST' }).then(function() {
+      Object.keys(revealedPasswords).forEach(function(id) { concealPassword(parseInt(id)); });
+      revealedPasswords = {};
+      showState('locked');
+      stopAutoLockCheck();
+      showToast('Vault locked', 'info');
+    }).catch(function(err) {
+      showToast(err.message, 'danger');
+    });
+  }
+
+  /* Load Entries */
+  function loadEntries() {
+    return api('/api/vault/entries').then(function(data) {
+      entries = data.entries || [];
+      renderEntries();
+    }).catch(function(err) {
+      if (err.status === 403) { handleVaultLocked(); return; }
+      showToast(err.message, 'danger');
+    });
+  }
+
+  /* Load Health */
+  function loadHealth() {
+    return api('/api/vault/health').then(function(data) {
+      healthData = data;
+      renderHealth();
+    }).catch(function(err) {
+      if (err.status === 403) { handleVaultLocked(); return; }
+    });
+  }
+
+  function renderHealth() {
+    if (!healthData) return;
+    $('health-total').textContent = healthData.total_entries;
+    $('health-weak').textContent = healthData.weak_count;
+    $('health-breached').textContent = healthData.breached_count;
+    $('health-reused').textContent = healthData.reused_count;
+    $('vault-health-panel').classList.toggle('hidden', healthData.total_entries === 0 && entries.length === 0);
+  }
+
+  /* Sort Entries */
+  function getSortedEntries() {
+    var arr = entries.slice();
+    if (sortMode === 'name-asc') {
+      arr.sort(function(a, b) { return (a.site_name || '').toLowerCase().localeCompare((b.site_name || '').toLowerCase()); });
+    } else if (sortMode === 'name-desc') {
+      arr.sort(function(a, b) { return (b.site_name || '').toLowerCase().localeCompare((a.site_name || '').toLowerCase()); });
+    } else if (sortMode === 'date-desc') {
+      arr.sort(function(a, b) { return (b.created_at || '').localeCompare((a.created_at || '')); });
+    } else if (sortMode === 'date-asc') {
+      arr.sort(function(a, b) { return (a.created_at || '').localeCompare((b.created_at || '')); });
+    }
+    return arr;
+  }
+
+  /* Render Entries */
+  function renderEntries() {
+    var list = $('entry-list');
+    var countEl = $('entry-count');
+    var sorted = getSortedEntries();
+    var filtered = sorted;
+    if (searchQuery) {
+      var q = searchQuery.toLowerCase();
+      filtered = sorted.filter(function(e) {
+        return (e.site_name || '').toLowerCase().indexOf(q) !== -1 ||
+               (e.username || '').toLowerCase().indexOf(q) !== -1 ||
+               (e.email || '').toLowerCase().indexOf(q) !== -1;
+      });
+    }
+    countEl.textContent = filtered.length + (filtered.length === 1 ? ' entry' : ' entries');
+
+    if (entries.length === 0) {
+      list.innerHTML =
+        '<div class="empty-state">' +
+          '<div class="empty-icon">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+          '</div>' +
+          '<div class="empty-title">No saved credentials</div>' +
+          '<div class="empty-hint">Add your first password to keep it encrypted and secure.</div>' +
+          '<div class="empty-cta"><button class="btn btn-primary btn-sm" id="empty-add-btn" type="button">Add Entry</button></div>' +
+        '</div>';
+      var emptyBtn = $('empty-add-btn');
+      if (emptyBtn) emptyBtn.addEventListener('click', function() { toggleAddForm(true); });
+      return;
+    }
+
+    if (filtered.length === 0) {
+      list.innerHTML =
+        '<div class="empty-state">' +
+          '<div class="empty-icon">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>' +
+          '</div>' +
+          '<div class="empty-title">No matching entries</div>' +
+          '<div class="empty-hint">Try a different search term.</div>' +
+        '</div>';
+      return;
+    }
+
+    var html = filtered.map(function(e) {
+      var isRevealed = revealedPasswords[e.id] !== undefined;
+      var usernameDisplay = e.username ? escapeHtml(e.username) : '<span class="muted">—</span>';
+      var pwDisplay = isRevealed ? escapeHtml(revealedPasswords[e.id].value) : '••••••••';
+      var revealIcon = isRevealed ? SVG.eyeOff : SVG.eye;
+      var revealLabel = isRevealed ? 'Hide password' : 'Reveal password';
+      return (
+        '<div class="vault-entry-card" data-entry-id="' + e.id + '">' +
+          '<div class="entry-site">' +
+            escapeHtml(e.site_name) +
+            '<span class="entry-date">Added ' + escapeHtml(e.created_at) + '</span>' +
+          '</div>' +
+          '<div class="entry-username" title="' + escapeHtml(e.username || '') + '">' + usernameDisplay + '</div>' +
+          '<div class="entry-password' + (isRevealed ? ' revealed' : '') + '">' + pwDisplay + '</div>' +
+          '<div class="entry-actions">' +
+            '<button class="entry-action-btn" data-action="reveal" data-id="' + e.id + '" aria-label="' + revealLabel + '" title="' + revealLabel.replace(' password', '') + '" type="button">' + revealIcon + '<span class="action-label">' + (isRevealed ? 'Hide' : 'Reveal') + '</span></button>' +
+            '<button class="entry-action-btn" data-action="copy" data-id="' + e.id + '" aria-label="Copy password" title="Copy" type="button">' + SVG.copy + '<span class="action-label">Copy</span></button>' +
+            '<button class="entry-action-btn" data-action="edit" data-id="' + e.id + '" aria-label="Edit entry" title="Edit" type="button">' + SVG.edit + '<span class="action-label">Edit</span></button>' +
+            '<button class="entry-action-btn danger" data-action="delete" data-id="' + e.id + '" aria-label="Delete entry" title="Delete" type="button">' + SVG.trash + '<span class="action-label">Delete</span></button>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+    list.innerHTML = html;
+  }
+
+  /* Reveal / Conceal Password */
+  function revealPassword(entryId) {
+    var card = document.querySelector('[data-entry-id="' + entryId + '"]');
+    if (!card) return;
+    var pwEl = card.querySelector('.entry-password');
+    if (pwEl && pwEl.dataset.revealed === 'true') {
+      concealPassword(entryId);
+      return;
+    }
+    api('/api/vault/entries/' + entryId + '/reveal', { method: 'POST' }).then(function(data) {
+      pwEl.textContent = data.password;
+      pwEl.dataset.revealed = 'true';
+      pwEl.classList.add('revealed');
+      var timeoutId = setTimeout(function() { concealPassword(entryId); }, 30000);
+      revealedPasswords[entryId] = { value: data.password, timeoutId: timeoutId };
+      var btn = card.querySelector('[data-action="reveal"]');
+      btn.innerHTML = SVG.eyeOff + '<span class="action-label">Hide</span>';
+      btn.setAttribute('aria-label', 'Hide password');
+      btn.title = 'Hide';
+    }).catch(function(err) {
+      if (err.status === 403) { handleVaultLocked(); return; }
+      showToast(err.message, 'danger');
+    });
+  }
+
+  function concealPassword(entryId) {
+    var card = document.querySelector('[data-entry-id="' + entryId + '"]');
+    if (!card) {
+      if (revealedPasswords[entryId]) {
+        clearTimeout(revealedPasswords[entryId].timeoutId);
+        delete revealedPasswords[entryId];
+      }
+      return;
+    }
+    var pwEl = card.querySelector('.entry-password');
+    if (pwEl) {
+      pwEl.textContent = '••••••••';
+      pwEl.dataset.revealed = 'false';
+      pwEl.classList.remove('revealed');
+    }
+    var btn = card.querySelector('[data-action="reveal"]');
+    if (btn) {
+      btn.innerHTML = SVG.eye + '<span class="action-label">Reveal</span>';
+      btn.setAttribute('aria-label', 'Reveal password');
+      btn.title = 'Reveal';
+    }
+    if (revealedPasswords[entryId]) {
+      clearTimeout(revealedPasswords[entryId].timeoutId);
+      delete revealedPasswords[entryId];
+    }
+  }
+
+  /* Copy Password */
+  function copyPassword(entryId) {
+    api('/api/vault/entries/' + entryId + '/reveal', { method: 'POST' }).then(function(data) {
+      return copyToClipboard(data.password).then(function() {
+        var card = document.querySelector('[data-entry-id="' + entryId + '"]');
+        if (card) {
+          var btn = card.querySelector('[data-action="copy"]');
+          btn.classList.add('copied');
+          setTimeout(function() { btn.classList.remove('copied'); }, 800);
+        }
+        showToast('Password copied to clipboard', 'success');
+      });
+    }).catch(function(err) {
+      if (err.status === 403) { handleVaultLocked(); return; }
+      showToast(err.message, 'danger');
+    });
+  }
+
+  /* Add Entry */
+  function handleAddEntry(e) {
+    e.preventDefault();
+    var siteName = $('add-site-name').value.trim();
+    var username = $('add-username').value.trim();
+    var email = $('add-email').value.trim();
+    var password = $('add-password').value;
+    $('add-error').textContent = '';
+    if (!siteName || !password) {
+      $('add-error').textContent = 'Site name and password are required.';
+      return;
+    }
+    var btn = $('add-submit');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    api('/api/vault/entries', {
+      method: 'POST',
+      body: JSON.stringify({ site_name: siteName, username: username, email: email, password: password })
+    }).then(function() {
+      $('add-form').reset();
+      toggleAddForm(false);
+      return Promise.all([loadEntries(), loadHealth()]);
+    }).then(function() {
+      showToast('Entry saved', 'success');
+    }).catch(function(err) {
+      if (err.status === 403) { handleVaultLocked(); return; }
+      $('add-error').textContent = err.message;
+    }).finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Save Entry';
+    });
+  }
+
+  function toggleAddForm(show) {
+    var wrap = $('add-form-wrap');
+    if (show === undefined) show = wrap.classList.contains('hidden');
+    wrap.classList.toggle('hidden', !show);
+    if (show) {
+      $('add-site-name').focus();
+    }
+  }
+
+  /* Edit Entry */
+  function openEditModal(entryId) {
+    var entry = entries.filter(function(e) { return e.id === entryId; })[0];
+    if (!entry) return;
+    editingEntryId = entryId;
+    $('edit-site-name').value = entry.site_name || '';
+    $('edit-username').value = entry.username || '';
+    $('edit-email').value = entry.email || '';
+    $('edit-password').value = '';
+    $('edit-error').textContent = '';
+    openModal('modal-edit');
+  }
+
+  function handleEditEntry(e) {
+    e.preventDefault();
+    if (!editingEntryId) return;
+    var siteName = $('edit-site-name').value.trim();
+    var username = $('edit-username').value.trim();
+    var email = $('edit-email').value.trim();
+    var password = $('edit-password').value; // Empty string if not changed
+    $('edit-error').textContent = '';
+    if (!siteName) {
+      $('edit-error').textContent = 'Site name is required.';
+      return;
+    }
+    var btn = $('edit-submit');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    api('/api/vault/entries/' + editingEntryId, {
+      method: 'PUT',
+      body: JSON.stringify({ site_name: siteName, username: username, email: email, password: password })
+    }).then(function() {
+      var editedId = editingEntryId;
+      closeModal('modal-edit');
+      editingEntryId = null;
+      concealPassword(editedId);
+      return Promise.all([loadEntries(), loadHealth()]);
+    }).then(function() {
+      showToast('Entry updated', 'success');
+    }).catch(function(err) {
+      if (err.status === 403) { handleVaultLocked(); closeModal('modal-edit'); return; }
+      $('edit-error').textContent = err.message;
+    }).finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    });
+  }
+
+  /* Delete Entry */
+  function openDeleteModal(entryId) {
+    pendingDeleteId = entryId;
+    var entry = entries.filter(function(e) { return e.id === entryId; })[0];
+    $('delete-site-name').textContent = entry ? entry.site_name : '';
+    $('delete-error').textContent = '';
+    openModal('modal-delete');
+  }
+
+  function handleDeleteEntry() {
+    if (!pendingDeleteId) return;
+    var btn = $('delete-confirm');
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+    api('/api/vault/entries/' + pendingDeleteId, { method: 'DELETE' }).then(function() {
+      var deletedId = pendingDeleteId;
+      closeModal('modal-delete');
+      pendingDeleteId = null;
+      concealPassword(deletedId);
+      return Promise.all([loadEntries(), loadHealth()]);
+    }).then(function() {
+      showToast('Entry deleted', 'success');
+    }).catch(function(err) {
+      if (err.status === 403) { handleVaultLocked(); closeModal('modal-delete'); return; }
+      $('delete-error').textContent = err.message;
+    }).finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Delete Entry';
+    });
+  }
+
+  /* Reset Vault */
+  function handleResetVault(e) {
+    e.preventDefault();
+    var masterPw = $('reset-master-pw').value;
+    var accountKey = $('reset-account-key').value;
+    $('reset-error').textContent = '';
+    var btn = $('reset-confirm');
+    btn.disabled = true;
+    btn.textContent = 'Resetting...';
+    api('/api/vault/reset', {
+      method: 'POST',
+      body: JSON.stringify({ master_password: masterPw, account_key: accountKey })
+    }).then(function() {
+      closeModal('modal-reset');
+      $('reset-form').reset();
+      Object.keys(revealedPasswords).forEach(function(id) { concealPassword(parseInt(id)); });
+      revealedPasswords = {};
+      entries = [];
+      healthData = null;
+      stopAutoLockCheck();
+      showState('setup');
+      showToast('Vault has been reset', 'info');
+    }).catch(function(err) {
+      $('reset-error').textContent = err.message;
+    }).finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Reset Vault';
+    });
+  }
+
+  /* Export */
+  function exportData(type) {
+    $('export-format').value = type;
+    $('export-password').value = '';
+    $('export-error').textContent = '';
+    openModal('modal-export');
+  }
+
+  function handleSecureExport(e) {
+    e.preventDefault();
+    var format = $('export-format').value;
+    var password = $('export-password').value;
+    $('export-error').textContent = '';
+    if (password.length < 6) {
+      $('export-error').textContent = 'Password must be at least 6 characters.';
+      return;
+    }
+    var btn = $('export-submit');
+    btn.disabled = true;
+    btn.textContent = 'Preparing...';
+    fetch('/api/account/export-secure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ format: format, password: password })
+    }).then(function(res) {
+      if (!res.ok) return res.json().then(function(d) { throw new Error(d.error || 'Export failed'); });
+      return res.blob();
+    }).then(function(blob) {
+      var a = document.createElement('a');
+      var url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = 'bambivault_export.' + (format === 'pdf' ? 'pdf' : 'zip');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      closeModal('modal-export');
+      $('export-form').reset();
+      showToast('Export downloaded', 'success');
+    }).catch(function(err) {
+      $('export-error').textContent = err.message;
+    }).finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Download';
+    });
+  }
+
+  /* Native Dialog Modal Helpers */
+  function openModal(modalId) {
+    var modal = $(modalId);
+    if (modal && typeof modal.showModal === 'function') {
+      modal.showModal();
+    } else if (modal) {
+      modal.setAttribute('open', '');
+    }
+  }
+
+  function closeModal(modalId) {
+    var modal = $(modalId);
+    if (modal && typeof modal.close === 'function') {
+      modal.close();
+    } else if (modal) {
+      modal.removeAttribute('open');
+    }
+  }
+
+  /* Auto-Lock Check */
+  function startAutoLockCheck() {
+    stopAutoLockCheck();
+    autoLockInterval = setInterval(checkVaultStillUnlocked, 30000);
+  }
+
+  function stopAutoLockCheck() {
+    if (autoLockInterval) { clearInterval(autoLockInterval); autoLockInterval = null; }
+  }
+
+  /* Password Visibility Toggle */
+  function setupPwToggles() {
+    document.querySelectorAll('.pw-toggle').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var targetId = btn.dataset.target;
+        if (!targetId) return;
+        var input = $(targetId);
+        if (!input) return;
+        if (input.type === 'password') {
+          input.type = 'text';
+          btn.innerHTML = SVG.eyeOff;
+          btn.setAttribute('aria-label', 'Hide password');
+        } else {
+          input.type = 'password';
+          btn.innerHTML = SVG.eye;
+          btn.setAttribute('aria-label', 'Show password');
+        }
+      });
+    });
+  }
+
+  /* Event Listeners */
+  function initEventListeners() {
+    $('setup-form').addEventListener('submit', handleSetup);
+    $('account-key-confirm').addEventListener('click', confirmAccountKeySaved);
+    $('account-key-copy').addEventListener('click', function() {
+      var key = $('account-key-display').textContent;
+      copyToClipboard(key).then(function() {
+        showToast('Account Key copied', 'success');
+      });
+    });
+
+    $('unlock-form').addEventListener('submit', handleUnlock);
+
+    $('btn-lock').addEventListener('click', handleLock);
+
+    $('btn-add-entry').addEventListener('click', function() { toggleAddForm(true); });
+    $('add-form').addEventListener('submit', handleAddEntry);
+    $('add-cancel').addEventListener('click', function() { toggleAddForm(false); });
+
+    $('entry-list').addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      var action = btn.dataset.action;
+      var id = parseInt(btn.dataset.id, 10);
+      if (action === 'reveal') revealPassword(id);
+      else if (action === 'copy') copyPassword(id);
+      else if (action === 'edit') openEditModal(id);
+      else if (action === 'delete') openDeleteModal(id);
+    });
+
+    $('edit-form').addEventListener('submit', handleEditEntry);
+    $('edit-cancel').addEventListener('click', function() { closeModal('modal-edit'); });
+
+    $('delete-confirm').addEventListener('click', handleDeleteEntry);
+    $('delete-cancel').addEventListener('click', function() { closeModal('modal-delete'); });
+
+    $('btn-reset-vault-locked').addEventListener('click', function() { openModal('modal-reset'); });
+    $('btn-reset-vault-settings').addEventListener('click', function() { openModal('modal-reset'); });
+    $('reset-form').addEventListener('submit', handleResetVault);
+    $('reset-cancel').addEventListener('click', function() { closeModal('modal-reset'); });
+
+    $('btn-export').addEventListener('click', function(e) {
+      e.stopPropagation();
+      $('export-menu').classList.toggle('open');
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.vault-export-wrap')) {
+        $('export-menu').classList.remove('open');
+      }
+    });
+    $('export-pdf').addEventListener('click', function() { $('export-menu').classList.remove('open'); exportData('pdf'); });
+    $('export-zip').addEventListener('click', function() { $('export-menu').classList.remove('open'); exportData('zip'); });
+    $('export-form').addEventListener('submit', handleSecureExport);
+    $('export-cancel').addEventListener('click', function() { closeModal('modal-export'); });
+
+    $('search-input').addEventListener('input', function(e) {
+      searchQuery = e.target.value;
+      renderEntries();
+    });
+
+    $('filter-select').addEventListener('change', function(e) {
+      sortMode = e.target.value;
+      renderEntries();
+    });
+
+    $('btn-health-refresh').addEventListener('click', function() {
+      var btn = $('btn-health-refresh');
+      btn.disabled = true;
+      loadHealth().then(function() {
+        showToast('Health updated', 'success');
+      }).finally(function() {
+        btn.disabled = false;
+      });
+    });
+
+    // Native dialogs handle Escape key and backdrop click internally
+    document.querySelectorAll('dialog.vault-modal').forEach(function(dialog) {
+      dialog.addEventListener('click', function(e) {
+        var rect = dialog.getBoundingClientRect();
+        var insideDialog = (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom);
+        if (!insideDialog) {
+          closeModal(dialog.id);
+        }
+      });
+    });
+
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && vaultState === 'unlocked') {
+        checkVaultStillUnlocked();
+      }
+    });
+
+    setupPwToggles();
+  }
+
+  /* Init */
+  document.addEventListener('DOMContentLoaded', function() {
+    initEventListeners();
+    checkStatus();
+  });
+
+})();
+</script>
+{% endblock %}

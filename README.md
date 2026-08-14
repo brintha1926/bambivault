@@ -80,7 +80,7 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 ## Model assets
 
-The trained model and source datasets are intentionally excluded from Git. To rebuild the model:
+The compressed trained model is included for reproducible deployment. Source datasets remain excluded from Git. To rebuild the model:
 
 ```powershell
 python clean_data.py
@@ -88,7 +88,7 @@ python generate_training_data_v3.py
 python train_model_v3.py
 ```
 
-The resulting model must be available at `model/strength_model_rf_v3.pkl`.
+The resulting model must be saved at `model/strength_model_rf_v3.pkl`. Use Joblib compression when preparing it for source control.
 
 ## PostgreSQL migration
 
@@ -127,10 +127,10 @@ Set `FLASK_ENV=production` and configure secrets through the hosting provider. R
 flask --app app bootstrap
 ```
 
-Start the application workers separately:
+The Docker image starts Gunicorn automatically and uses the platform-provided `PORT`. For a native Python deployment, start the workers with:
 
 ```bash
-gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 60 app:app
+gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --timeout 60 app:app
 ```
 
 Database migrations must not run independently inside each worker.

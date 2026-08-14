@@ -72,6 +72,9 @@ class Config:
     SMTP_USER: Optional[str] = None
     SMTP_PASS: Optional[str] = None
     SMTP_FROM: Optional[str] = None
+    BREVO_API_KEY: Optional[str] = None
+    EMAIL_FROM: Optional[str] = None
+    EMAIL_FROM_NAME: str = "BambiVault"
     APP_BASE_URL: str = "http://127.0.0.1:5000"
 
     def __post_init__(self) -> None:
@@ -102,6 +105,14 @@ class Config:
             SMTP_USER=os.environ.get("SMTP_USER") or None,
             SMTP_PASS=os.environ.get("SMTP_PASS") or None,
             SMTP_FROM=os.environ.get("SMTP_FROM") or os.environ.get("SMTP_USER") or None,
+            BREVO_API_KEY=os.environ.get("BREVO_API_KEY") or None,
+            EMAIL_FROM=(
+                os.environ.get("EMAIL_FROM")
+                or os.environ.get("SMTP_FROM")
+                or os.environ.get("SMTP_USER")
+                or None
+            ),
+            EMAIL_FROM_NAME=os.environ.get("EMAIL_FROM_NAME", "BambiVault"),
             APP_BASE_URL=os.environ.get("APP_BASE_URL", "http://127.0.0.1:5000"),
         )
 

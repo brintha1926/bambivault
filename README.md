@@ -70,7 +70,19 @@ FLASK_DEBUG="True"
 APP_BASE_URL="http://127.0.0.1:5000"
 ```
 
-Optional integrations use `GROQ_API_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM`.
+For verification and password-reset email on hosting platforms that restrict SMTP,
+configure Brevo's HTTPS transactional email API:
+
+```dotenv
+BREVO_API_KEY="replace-with-a-Brevo-API-key"
+EMAIL_FROM="verified-sender@example.com"
+EMAIL_FROM_NAME="BambiVault"
+```
+
+`EMAIL_FROM` must be a sender verified in Brevo. The application prefers Brevo
+when `BREVO_API_KEY` is present. `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+`SMTP_PASS`, and `SMTP_FROM` remain supported as an optional fallback.
+`GROQ_API_KEY` enables the optional AI recommendation integration.
 
 Generate a Flask session secret with:
 

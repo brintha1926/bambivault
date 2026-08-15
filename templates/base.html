@@ -280,9 +280,9 @@ function submitGlobalSearch(e) {
 
 lucide.createIcons();
 
-{% if session.get('user_id') %}
 /* Populate the avatar / username / email from /api/account/status */
 (async function() {
+  if (!document.getElementById('navAvatar')) return;
   try {
     var r = await fetch('/api/account/status');
     var d = await r.json();
@@ -294,7 +294,6 @@ lucide.createIcons();
     var em = document.getElementById('navEmail');       if (em) em.textContent = d.email || '';
   } catch (e) { /* keep defaults */ }
 })();
-{% endif %}
 
 /* Toast notifications */
 (function() {

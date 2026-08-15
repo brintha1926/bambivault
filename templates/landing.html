@@ -1,5 +1,5 @@
 {% extends "public_base.html" %}
-{% block title %}BambiVault | Password security intelligence{% endblock %}
+{% block title %}BambiVault | Password Security Intelligence{% endblock %}
 
 {% block public_nav_links %}
   <a href="#features" class="nav-text-mobile-hide">Features</a>
@@ -16,7 +16,7 @@
       <span class="landing-glow landing-glow-one"></span>
       <span class="landing-glow landing-glow-two"></span>
     </div>
-    <h1 class="landing-title">Discover password weaknesses beyond <span class="hl">basic strength scores</span></h1>
+    <h1 class="landing-title"><span class="hl">Behaviour-based credential</span> <span class="title-dark">risk classification</span></h1>
     <p class="landing-sub">Trained on 14 million real leaked passwords. Checked against 847 million known breaches and provides targeted guidance for detected weaknesses.</p>
     <div class="landing-cta-row">
       <a href="{{ url_for('analyser_page') }}" class="btn btn-primary">Analyse a password</a>
@@ -40,7 +40,7 @@
 
   <section class="section" id="features">
     <div class="section-hdr">
-      <h2>Password security intelligence</h2>
+      <h2>Password Security Intelligence</h2>
       <p>BambiVault combines machine learning, behavioural pattern detection, and breach intelligence to deliver a more complete assessment of password risk.</p>
     </div>
     <div class="feature-row">
@@ -64,7 +64,7 @@
 
   <section class="section" id="how" style="background:var(--surface-2); border-radius:var(--r-lg);">
     <div class="section-hdr">
-      <h2>The BambiVault assessment process</h2>
+      <h2>Assessment Process</h2>
       <p>Comprehensive security intelligence in three focused steps.</p>
     </div>
     <div class="how-steps">
@@ -76,7 +76,7 @@
 
   <section class="section">
     <div class="section-hdr">
-      <h2>Research-driven security analysis</h2>
+      <h2>Research-Driven Security Analysis</h2>
       <p>BambiVault combines established security techniques with real-world password data to produce explainable, consistent, and relevant assessments.</p>
     </div>
     <div class="methodology-panel">
@@ -89,7 +89,7 @@
 
   <section class="section" id="privacy">
     <div class="privacy-panel">
-      <h2>Designed for privacy</h2>
+      <h2 class="privacy-title">Designed for Privacy</h2>
       <p class="section-sub">Clear safeguards govern how passwords and account information are processed.</p>
       <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Passwords submitted for assessment are not retained in plaintext.</div>
       <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Breach checks transmit only a partial hash, never the complete password.</div>

@@ -59,6 +59,9 @@ def test_admin_stats_uses_portable_daily_trend_query(client, app_module):
     from models import db, PasswordLog
 
     with app_module.app.app_context():
+        PasswordLog.query.delete()
+        db.session.commit()
+
         row = PasswordLog(
             hash_prefix="ABCDE",
             strength_label="Weak",

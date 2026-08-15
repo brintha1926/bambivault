@@ -1,0 +1,26 @@
+* 32fbbd7  2026-08-14  Fix production admin stats and email diagnostics
+* fadb8b2  2026-08-14  Fix Render container startup (#4)
+[31m|[m * f300569  2026-08-14  Fix Render container startup
+[31m|[m[31m/[m  
+* 25c3c96  2026-08-14  Add HTTPS transactional email delivery (#3)
+[32m|[m * bca8760  2026-08-14  Add HTTPS transactional email delivery
+[32m|[m[32m/[m  
+* c7469ef  2026-08-14  Complete production deployment packaging
+[33m|[m * 81064ea  2026-08-14  Tune production worker memory
+[33m|[m * 95c5eb2  2026-08-14  Package model for production deployment
+[33m|[m[33m/[m  
+* 5e3aeae  2026-08-14  Update README.md
+*   03deb9f  2026-08-14  Merge pull request #1 from brintha1926/agent/production-readiness-update
+[35m|[m[36m\[m  
+[35m|[m [36m|[m * d4fc128  2026-08-14  Tune production worker memory
+[35m|[m [36m|[m * 1231916  2026-08-14  Package model for production deployment
+[35m|[m [36m|[m[36m/[m  
+[35m|[m * 57bbf10  2026-08-14  Modernize and secure BambiVault application
+[35m|[m[35m/[m  
+*   2a5af3a  2026-08-02  Merge branch 'main' of https://github.com/brintha1926/bambivault
+[1;32m|[m[1;33m\[m  
+[1;32m|[m * 747077a  2026-07-11  Update breach.py
+[1;32m|[m * e30c1d7  2026-07-11  Update app.py
+* [1;33m|[m d3f5a24  2026-08-02  Fix broken routes, separate landing page from analyser
+[1;33m|[m[1;33m/[m  
+* 1c89802  2026-07-11  BambiVault - An Interactive System for Evaluating Password Behaviour and Security Awareness Among University Students

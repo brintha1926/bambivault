@@ -16,7 +16,7 @@
       <span class="landing-glow landing-glow-one"></span>
       <span class="landing-glow landing-glow-two"></span>
     </div>
-    <h1 class="landing-title"><span class="hl">Behaviour-based credential</span> <span class="title-dark">risk classification</span></h1>
+    <h1 class="landing-title"><span class="hl">Behaviour-based credential</span><span class="title-dark">risk classification</span></h1>
     <p class="landing-sub">Trained on 14 million real leaked passwords. Checked against 847 million known breaches and provides targeted guidance for detected weaknesses.</p>
     <div class="landing-cta-row">
       <a href="{{ url_for('analyser_page') }}" class="btn btn-primary">Analyse a password</a>
@@ -89,14 +89,24 @@
 
   <section class="section" id="privacy">
     <div class="privacy-panel">
-      <h2 class="privacy-title">Designed for Privacy</h2>
-      <p class="section-sub">Clear safeguards govern how passwords and account information are processed.</p>
-      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Passwords submitted for assessment are not retained in plaintext.</div>
-      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Breach checks transmit only a partial hash, never the complete password.</div>
-      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Guest assessments are not linked to an account or retained in account history.</div>
-      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Vault data is encrypted using the account holder's master password and Account Key.</div>
-      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Administrative reporting contains aggregated and anonymised statistics only.</div>
-      <div class="privacy-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Account deletion removes the associated profile and vault data.</div>
+      <div class="privacy-header">
+        <span class="privacy-shield" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v5c0 4.8 2.9 8.2 7 10 4.1-1.8 7-5.2 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+        </span>
+        <div>
+          <p class="privacy-kicker">Privacy by design</p>
+          <h2 class="privacy-title">Designed for Privacy</h2>
+          <p class="section-sub">Clear safeguards govern how passwords and account information are processed.</p>
+        </div>
+      </div>
+      <div class="privacy-grid">
+        <div class="privacy-item"><span class="privacy-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span>Passwords submitted for assessment are not retained in plaintext.</span></div>
+        <div class="privacy-item"><span class="privacy-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span>Breach checks transmit only a partial hash, never the complete password.</span></div>
+        <div class="privacy-item"><span class="privacy-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span>Guest assessments are not linked to an account or retained in account history.</span></div>
+        <div class="privacy-item"><span class="privacy-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span>Vault data is encrypted using the account holder's master password and Account Key.</span></div>
+        <div class="privacy-item"><span class="privacy-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span>Administrative reporting contains aggregated and anonymised statistics only.</span></div>
+        <div class="privacy-item"><span class="privacy-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span>Account deletion removes the associated profile and vault data.</span></div>
+      </div>
     </div>
   </section>
 

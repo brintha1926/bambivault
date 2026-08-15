@@ -55,6 +55,7 @@ def test_render_health_endpoint_reports_ok(client):
 
 def test_admin_stats_uses_portable_daily_trend_query(client, app_module):
     from datetime import datetime
+
     from models import db, PasswordLog
 
     with app_module.app.app_context():
@@ -62,7 +63,6 @@ def test_admin_stats_uses_portable_daily_trend_query(client, app_module):
         db.session.commit()
 
         row = PasswordLog(
-         
             hash_prefix="ABCDE",
             strength_label="Weak",
             entropy=12.0,

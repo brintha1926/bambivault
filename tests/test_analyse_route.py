@@ -62,6 +62,7 @@ def test_admin_stats_uses_portable_daily_trend_query(client, app_module):
         db.session.commit()
 
         row = PasswordLog(
+         
             hash_prefix="ABCDE",
             strength_label="Weak",
             entropy=12.0,

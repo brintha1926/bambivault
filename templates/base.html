@@ -50,7 +50,7 @@
                @click="navClick()"
                class="sidebar-link {% if request.path == '/admin/settings' %}is-active{% endif %}"
                {% if request.path == '/admin/settings' %}aria-current="page"{% endif %}>
-                <i data-lucide="shield-check" class="w-5 h-5"></i><span>Security</span>
+                <i data-lucide="settings" class="w-5 h-5"></i><span>Settings</span>
             </a>
             {% endif %}
             {% if session.get('user_id') %}
@@ -171,7 +171,7 @@
                             <p>Administrator</p>
                             <small>Institutional access</small>
                         </div>
-                        <a href="{{ url_for('admin_settings') }}"><i data-lucide="settings" class="w-4 h-4"></i>Security settings</a>
+                        <a href="{{ url_for('admin_settings') }}"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
                         <a href="{{ url_for('admin_logout') }}" class="danger-link"><i data-lucide="log-out" class="w-4 h-4"></i>Admin logout</a>
                     </div>
                 </div>

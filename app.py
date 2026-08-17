@@ -29,7 +29,12 @@ from breach import check_breach, get_cache_stats
 from strengthen import suggest_stronger_variants
 from vault_routes import vault_bp
 from database_migrations import run_database_migrations
-from security_utils import consume_rate_limit, clear_rate_limit
+from security_utils import (
+    clear_rate_limit,
+    consume_rate_limit,
+    hash_recovery_code,
+    verify_recovery_code,
+)
 
 
 from config import config
@@ -468,7 +473,7 @@ def admin_login_2fa():
     valid = bool(otp and otp.enabled and pyotp.TOTP(otp.secret).verify(token, valid_window=1))
     if not valid and otp and otp.recovery_codes:
         hashes = json.loads(otp.recovery_codes)
-        match = next((h for h in hashes if check_password_hash(h, token.upper())), None)
+        match = next((h for h in hashes if verify_recovery_code(h, token)), None)
         if match:
             hashes.remove(match)
             otp.recovery_codes = json.dumps(hashes)
@@ -582,7 +587,7 @@ def admin_2fa_verify():
         return jsonify({'error': 'Incorrect authentication code.'}), 401
     codes = [secrets.token_hex(4).upper() for _ in range(10)]
     otp.enabled = True
-    otp.recovery_codes = json.dumps([generate_password_hash(code) for code in codes])
+    otp.recovery_codes = json.dumps([hash_recovery_code(code) for code in codes])
     db.session.commit()
     return jsonify({'status': 'ok', 'recovery_codes': codes})
 

@@ -16,7 +16,14 @@ from ml_classifier import classify_strength
 from breach import check_breach
 import vault_crypto as vc
 import email_utils as eu
-from security_utils import consume_rate_limit, clear_rate_limit, valid_email, valid_username
+from security_utils import (
+    clear_rate_limit,
+    consume_rate_limit,
+    hash_recovery_code,
+    valid_email,
+    valid_username,
+    verify_recovery_code,
+)
 
 vault_bp = Blueprint('vault_bp', __name__)
 
@@ -157,7 +164,7 @@ def login_2fa_verify():
     elif recovery_code:
         codes = json.loads(otp.recovery_codes or '[]')
         for i, hashed in enumerate(codes):
-            if check_password_hash(hashed, recovery_code):
+            if verify_recovery_code(hashed, recovery_code):
                 verified = True
                 codes.pop(i)  # single-use — burn it immediately
                 otp.recovery_codes = json.dumps(codes)
@@ -365,7 +372,7 @@ def verify_2fa():
 
     import secrets as _secrets
     codes = [_secrets.token_hex(4).upper() for _ in range(10)]   # e.g. "A1B2C3D4"
-    otp.recovery_codes = json.dumps([generate_password_hash(c) for c in codes])
+    otp.recovery_codes = json.dumps([hash_recovery_code(c) for c in codes])
     otp.enabled = True
     db.session.commit()
 

@@ -1,4 +1,5 @@
 import pytest
+from werkzeug.security import generate_password_hash
 
 
 def test_post_without_csrf_token_is_rejected(app_module):
@@ -33,3 +34,16 @@ def test_verification_resend_does_not_require_login(client, monkeypatch):
     assert response.status_code == 200
     assert response.get_json() == {'status': 'ok'}
     assert sent == []
+
+
+def test_recovery_code_hashes_are_fast_and_backward_compatible(app_module):
+    from security_utils import hash_recovery_code, verify_recovery_code
+
+    with app_module.app.app_context():
+        current = hash_recovery_code('A1B2C3D4')
+        assert current.startswith('hmac-sha256$')
+        assert verify_recovery_code(current, 'a1b2c3d4')
+        assert not verify_recovery_code(current, 'FFFFFFFF')
+
+        legacy = generate_password_hash('A1B2C3D4')
+        assert verify_recovery_code(legacy, 'a1b2c3d4')

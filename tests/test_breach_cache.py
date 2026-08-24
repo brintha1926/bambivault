@@ -27,6 +27,29 @@ def test_cache_miss_then_hit(monkeypatch, isolated_breach_cache):
     assert result2["api_status"] == "cached"
 
 
+def test_shared_prefix_cache_matches_each_full_suffix(monkeypatch, isolated_breach_cache):
+    """Two passwords in one HIBP prefix range must receive independent counts."""
+    class FakeDigest:
+        def __init__(self, value):
+            self.value = value
+        def hexdigest(self):
+            return 'ABCDE' + ('1' * 35 if self.value == b'first' else '2' * 35)
+
+    monkeypatch.setattr(breach.hashlib, 'sha1', lambda value: FakeDigest(value))
+    calls = {'count': 0}
+    def fake_query(prefix):
+        calls['count'] += 1
+        return {'status': 'ok', 'hashes': {'1' * 35: 42, '2' * 35: 0}}
+    monkeypatch.setattr(breach, '_query_hibp', fake_query)
+
+    first = breach.check_breach('first')
+    second = breach.check_breach('second')
+
+    assert first['breach_count'] == 42
+    assert second['breach_count'] == 0
+    assert calls['count'] == 1
+
+
 def test_cache_expiry_forces_requery(monkeypatch, isolated_breach_cache):
     """Once CACHE_EXPIRY_SECONDS has elapsed, a cached prefix should be
     treated as stale and the API re-queried."""

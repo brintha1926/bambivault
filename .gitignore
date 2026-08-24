@@ -8,6 +8,7 @@ logs/
 .mypy_cache/
 .vscode/
 .tmp.driveupload/
+node_modules/
 .DS_Store
 Thumbs.db
 data/*.db

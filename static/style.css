@@ -177,14 +177,14 @@ p { margin: 0; }
 
 /* Application shell */
 
-.app-shell { display: flex; min-height: 100vh; }
+.app-shell { display: flex; min-height: 100vh; min-height: 100dvh; }
 
 .sidebar {
   width: var(--sidebar-w); flex-shrink: 0;
   background: var(--surface); border-right: 1px solid var(--border);
   color: var(--text);
   display: flex; flex-direction: column; padding: 1.3rem 1rem;
-  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  position: fixed; inset: 0 auto 0 0; height: 100vh; height: 100dvh; overflow-y: auto;
 }
 .sidebar-brand { display: flex; align-items: center; gap: .6rem; padding: .4rem .5rem 1.5rem; }
 .sidebar-brand-link { display: flex; align-items: center; gap: .6rem; min-width: 0; }
@@ -219,10 +219,11 @@ p { margin: 0; }
 .sidebar-user-name { font-size: .82rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar-user-email { font-size: .72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.main { flex: 1; width: 100%; min-width: 0; display: flex; flex-direction: column; }
 
 /* Compact desktop navigation rail; expands for pointer and keyboard users. */
 @media (min-width: 768px) {
+  .main { margin-left: var(--sidebar-rail-w); }
   .sidebar {
     width: var(--sidebar-rail-w);
     padding-inline: .75rem;
@@ -607,6 +608,9 @@ tbody td { padding: .7rem 1rem; font-size: .84rem; color: var(--text); }
   max-width: none;
   align-items: stretch;
 }
+
+body { background-color: #F8FAFC; }
+[x-cloak] { display: none !important; }
 .admin-settings-page .settings-security-stack > .panel { height: 100%; }
 .admin-settings-page .settings-form-compact { max-width: none; }
 @media (max-width: 900px) {

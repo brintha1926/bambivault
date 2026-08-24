@@ -4,7 +4,7 @@ BambiVault is a password-security assessment and encrypted credential-management
 
 ## Core capabilities
 
-- Five-tier password-strength classification using a Random Forest model
+- Experimental five-tier classification using a Random Forest model trained on derived structural labels; results are supplemented by explicit pattern and breach evidence
 - Detection of keyboard walks, name-and-year patterns, substitutions, and dictionary words
 - Have I Been Pwned range queries using a five-character SHA-1 prefix
 - Personalised stronger-password variants generated without sending plaintext passwords to an AI service
@@ -132,6 +132,10 @@ python -m mypy feature_extraction.py strengthen.py config.py security_utils.py m
 The automated suite covers analysis responses, breach fallbacks, caching, behavioural classification, authentication boundaries, PostgreSQL transfer validation, Unicode input, stronger-password variants, vault cryptography, and secure exports.
 
 ## Production deployment
+
+Set `TRUSTED_PROXY_HOPS=1` when the application runs behind one trusted reverse proxy, such as Render or a single Nginx proxy. Leave it at `0` when the application is directly exposed. `MAX_CONTENT_LENGTH` defaults to 1 MB.
+
+Frontend utility classes are compiled into `static/tailwind.css`. After changing utility classes in templates, run `npm install` once and then `npm run build:css`; production does not load the Tailwind browser CDN.
 
 Set `FLASK_ENV=production` and configure secrets through the hosting provider. Run database preparation once as the release or pre-deploy command:
 

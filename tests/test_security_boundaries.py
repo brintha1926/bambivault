@@ -10,6 +10,20 @@ def test_post_without_csrf_token_is_rejected(app_module):
     assert 'Security token' in response.get_json()['error']
 
 
+def test_csp_blocks_script_attributes_and_uses_nonce(client):
+    response = client.get('/')
+    policy = response.headers['Content-Security-Policy']
+    assert "script-src-attr 'none'" in policy
+    assert "script-src 'self' 'nonce-" in policy
+    assert "script-src 'self' 'unsafe-inline'" not in policy
+
+
+def test_sensitive_api_responses_are_not_cached(client):
+    response = client.get('/api/account/status')
+    assert response.headers['Cache-Control'] == 'no-store, private'
+    assert response.headers['Pragma'] == 'no-cache'
+
+
 def test_admin_login_is_rate_limited(client, app_module):
     for _ in range(5):
         response = client.post('/admin/login', data={'password': 'incorrect'})

@@ -1,5 +1,14 @@
 .env
 .git
+.tmp.driveupload
+tmp
+node_modules
+data/rockyou.txt
+data/rockyou_clean.txt
+data/password_frequency.csv
+data/training_data*.csv
+model/*.pkl
+!model/strength_model_rf_v3.pkl
 .gitignore
 .pytest_cache
 .mypy_cache

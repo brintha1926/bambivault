@@ -2,10 +2,12 @@
 import hashlib
 import hmac
 import re
+import base64
 from datetime import datetime, timedelta
 from flask import current_app
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash
+from cryptography.fernet import Fernet, InvalidToken
 
 from models import db, RateLimitBucket
 
@@ -16,11 +18,59 @@ RECOVERY_HASH_PREFIX = 'hmac-sha256$'
 
 
 def valid_email(value: str) -> bool:
-    return bool(value and len(value) <= 254 and EMAIL_RE.fullmatch(value))
+    # Keep validation aligned with app_user.email (VARCHAR(120)).
+    return bool(value and len(value) <= 120 and EMAIL_RE.fullmatch(value))
 
 
 def valid_username(value: str) -> bool:
     return bool(value and USERNAME_RE.fullmatch(value))
+
+
+def normalise_username(value: str) -> str:
+    """Canonical form used for storage, lookup, and uniqueness checks."""
+    return (value or '').strip().lower()
+
+
+def _totp_cipher() -> Fernet:
+    key = hashlib.sha256(str(current_app.secret_key).encode('utf-8')).digest()
+    return Fernet(base64.urlsafe_b64encode(key))
+
+
+def encrypt_totp_secret(secret: str) -> str:
+    return 'fernet$' + _totp_cipher().encrypt(secret.encode('ascii')).decode('ascii')
+
+
+def decrypt_totp_secret(stored: str) -> str:
+    """Decrypt current secrets while accepting legacy plaintext rows."""
+    if not stored:
+        return ''
+    if not stored.startswith('fernet$'):
+        return stored
+    try:
+        return _totp_cipher().decrypt(stored[7:].encode('ascii')).decode('ascii')
+    except (InvalidToken, ValueError):
+        return ''
+
+
+def verify_totp_once(otp_row, candidate: str, valid_window: int = 1) -> bool:
+    """Verify a TOTP and reject reuse of the same accepted time step."""
+    if not candidate or not candidate.isdigit() or len(candidate) != 6:
+        return False
+    secret = decrypt_totp_secret(otp_row.secret)
+    if not secret:
+        return False
+    totp = __import__('pyotp').TOTP(secret)
+    now_step = int(datetime.utcnow().timestamp()) // totp.interval
+    for offset in range(-valid_window, valid_window + 1):
+        step = now_step + offset
+        if totp.verify(candidate, for_time=step * totp.interval, valid_window=0):
+            if otp_row.last_used_step is not None and step <= otp_row.last_used_step:
+                return False
+            if not otp_row.secret.startswith('fernet$'):
+                otp_row.secret = encrypt_totp_secret(secret)
+            otp_row.last_used_step = step
+            return True
+    return False
 
 
 def _normalise_recovery_code(value: str) -> str:

@@ -42,6 +42,7 @@ class PasswordLog(db.Model):
             'pattern_flags':     self.pattern_flags or 'none_detected',
             'behaviour_profile': self.behaviour_profile or 'Clean',
             'entropy':           round(self.entropy, 2),
+            'character_entropy_bits_per_character': round(self.entropy, 2),
             'breach_exposed':    self.breach_exposed,
             'breach_risk':       self.breach_risk or 'Unknown',
             'submitted_at':      self.submitted_at.strftime('%Y-%m-%d %H:%M:%S')
@@ -115,10 +116,11 @@ class UserOTP(db.Model):
     __tablename__ = 'user_otp'
 
     user_id        = db.Column(db.Integer, db.ForeignKey('app_user.id'), primary_key=True)
-    secret         = db.Column(db.String(32), nullable=False)
+    secret         = db.Column(db.String(255), nullable=False)
     enabled        = db.Column(db.Boolean, default=False)
     recovery_codes = db.Column(db.Text, nullable=True)   # JSON list of hashed codes
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    last_used_step = db.Column(db.BigInteger, nullable=True)
 
 
 class UserSession(db.Model):
@@ -151,6 +153,7 @@ class AdminAccount(db.Model):
     id            = db.Column(db.Integer, primary_key=True, default=1)
     email         = db.Column(db.String(120), unique=True, nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    auth_version  = db.Column(db.Integer, nullable=False, default=1)
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at    = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -160,10 +163,11 @@ class AdminOTP(db.Model):
     __tablename__ = 'admin_otp'
 
     admin_id       = db.Column(db.Integer, db.ForeignKey('admin_account.id'), primary_key=True)
-    secret         = db.Column(db.String(32), nullable=False)
+    secret         = db.Column(db.String(255), nullable=False)
     enabled        = db.Column(db.Boolean, default=False)
     recovery_codes = db.Column(db.Text, nullable=True)
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    last_used_step = db.Column(db.BigInteger, nullable=True)
 
 
 class RateLimitBucket(db.Model):

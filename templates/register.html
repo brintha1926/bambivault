@@ -52,7 +52,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
   document.querySelectorAll('[data-toggle-pw]').forEach(function(btn) {
     btn.addEventListener('click', function() {

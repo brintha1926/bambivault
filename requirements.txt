@@ -43,5 +43,6 @@ cryptography==50.0.0
 pyotp==2.9.0
 qrcode==7.4.2
 pyzipper==0.4.0
+pyaes==1.6.1
 psycopg[binary]==3.3.4
 gunicorn==23.0.0

@@ -76,6 +76,8 @@ class Config:
     EMAIL_FROM: Optional[str] = None
     EMAIL_FROM_NAME: str = "BambiVault"
     APP_BASE_URL: str = "http://127.0.0.1:5000"
+    MAX_CONTENT_LENGTH: int = 1_048_576
+    TRUSTED_PROXY_HOPS: int = 0
 
     def __post_init__(self) -> None:
         # Production policy overrides unsafe local cookie/debug settings.
@@ -114,6 +116,8 @@ class Config:
             ),
             EMAIL_FROM_NAME=os.environ.get("EMAIL_FROM_NAME", "BambiVault"),
             APP_BASE_URL=os.environ.get("APP_BASE_URL", "http://127.0.0.1:5000"),
+            MAX_CONTENT_LENGTH=_int_env("MAX_CONTENT_LENGTH", 1_048_576),
+            TRUSTED_PROXY_HOPS=_int_env("TRUSTED_PROXY_HOPS", 0),
         )
 
 

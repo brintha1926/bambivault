@@ -44,7 +44,7 @@
         <tr>
           <th scope="col">Date</th>
           <th scope="col">Strength</th>
-          <th scope="col">Entropy</th>
+          <th scope="col">Character entropy</th>
           <th scope="col">Profile</th>
           <th scope="col">Patterns</th>
           <th scope="col">Breach</th>
@@ -69,7 +69,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 const STRENGTH_BADGE = {
   'Very Weak':  'badge-vw',
   'Weak':       'badge-w',
@@ -140,7 +140,7 @@ function renderDatabase(d){
     return '<tr>'+
       '<td>'+escapeHTML(r.submitted_at)+'</td>'+
       '<td><span class="badge '+badgeCls+'">'+escapeHTML(r.strength_label)+'</span></td>'+
-      '<td class="mono">'+Number(r.entropy).toFixed(2)+'</td>'+
+      '<td class="mono">'+Number(r.entropy).toFixed(2)+' bits/character</td>'+
       '<td>'+escapeHTML(r.behaviour_profile)+'</td>'+
       '<td>'+patterns+'</td>'+
       '<td>'+breach+'</td>'+

@@ -75,6 +75,7 @@ def test_admin_stats_uses_portable_daily_trend_query(client, app_module):
 
     with client.session_transaction() as session:
         session["is_admin"] = True
+        session["admin_auth_version"] = 1
 
     response = client.get("/api/admin/stats")
     assert response.status_code == 200

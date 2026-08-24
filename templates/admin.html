@@ -51,7 +51,7 @@
       <div class="dstat-delta" id="aTotalSub">All users combined</div>
     </div>
     <div class="dstat">
-      <div class="dstat-label">Avg entropy</div>
+      <div class="dstat-label">Avg character entropy</div>
       <div class="dstat-val" id="aAvgEntropy">—</div>
       <div class="dstat-delta">bits, across all analyses</div>
     </div>
@@ -120,7 +120,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 // Export dropdown: keyboard + click
 (function() {
   var btn = document.getElementById('exportBtn');
@@ -302,7 +302,7 @@ function renderRiskIndicators(d, riskMap, profiles){
     {label:'Leading pattern', value:dominant ? dominant.label.replace(' Type','') : 'No data', note:dominant && total ? Math.round(dominant.count/total*100)+'% of analyses' : 'No analyses available'},
     {label:'Breach exposure', value:(d.breach_rate || 0)+'%', note:(d.breached || 0)+' known exposures'},
     {label:'High or critical', value:total ? Math.round(highCritical/total*100)+'%' : '0%', note:highCritical+' analyses'},
-    {label:'Average entropy', value:Number(d.avg_entropy || 0).toFixed(2), note:'bits across all analyses'}
+    {label:'Average character entropy', value:Number(d.avg_entropy || 0).toFixed(2), note:'bits per character'}
   ];
   document.getElementById('riskIndicators').innerHTML = indicators.map(function(item){
     return '<div class="risk-kpi"><span>'+item.label+'</span><strong>'+item.value+'</strong><small>'+item.note+'</small></div>';
@@ -337,7 +337,7 @@ function renderCompare(d){
 
   var rows = [
     { label: 'Total analyses', cur: cur.total ?? 0, prev: prev.total ?? 0 },
-    { label: 'Avg entropy',    cur: cur.avg_entropy ?? 0, prev: prev.avg_entropy ?? 0, decimals: 2 },
+    { label: 'Avg character entropy', cur: cur.avg_entropy ?? 0, prev: prev.avg_entropy ?? 0, decimals: 2 },
     { label: 'Breach rate',    cur: (cur.breach_rate ?? 0) + '%', prev: prev.breach_rate ?? 0, raw_cur: cur.breach_rate ?? 0 },
     { label: 'Breached count', cur: cur.breached ?? 0, prev: prev.breached ?? 0 }
   ];

@@ -28,7 +28,7 @@ def extract_features(password: str) -> FeatureDict:
     num_digits: int = sum(1 for c in password if c.isdigit())
     num_special: int = sum(1 for c in password if not c.isalnum())
 
-    # Shannon entropy
+    # Empirical Shannon entropy per character. This is not total search-space entropy.
     entropy: float
     if length == 0:
         entropy = 0.0

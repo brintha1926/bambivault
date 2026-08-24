@@ -16,9 +16,10 @@ from ai_feedback import get_ai_recommendations
 import joblib
 import numpy as np
 from flask import (Flask, render_template, request, jsonify,
-                    session, redirect, url_for, Response, send_file)
+                    session, redirect, url_for, Response, send_file, g)
 from flask_migrate import Migrate, upgrade as migrate_upgrade
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 from sqlalchemy import func
 import pyotp
 import qrcode
@@ -33,6 +34,8 @@ from security_utils import (
     clear_rate_limit,
     consume_rate_limit,
     hash_recovery_code,
+    encrypt_totp_secret,
+    verify_totp_once,
     verify_recovery_code,
 )
 
@@ -67,6 +70,13 @@ logger.propagate = False
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+if config.TRUSTED_PROXY_HOPS > 0:
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app,
+        x_for=config.TRUSTED_PROXY_HOPS,
+        x_proto=config.TRUSTED_PROXY_HOPS,
+        x_host=config.TRUSTED_PROXY_HOPS,
+    )
 
 app.config['SQLALCHEMY_DATABASE_URI']        = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -79,11 +89,31 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 app.config['SESSION_COOKIE_SECURE']   = config.SESSION_COOKIE_SECURE
 app.config['SESSION_COOKIE_HTTPONLY'] = config.SESSION_COOKIE_HTTPONLY
 app.config['SESSION_COOKIE_SAMESITE'] = config.SESSION_COOKIE_SAMESITE
+app.config['MAX_CONTENT_LENGTH'] = config.MAX_CONTENT_LENGTH
 
 db.init_app(app)
 migrate = Migrate(app, db, compare_type=True)
 
 app.register_blueprint(vault_bp)
+
+
+@app.before_request
+def create_csp_nonce():
+    g.csp_nonce = secrets.token_urlsafe(18)
+
+
+@app.context_processor
+def inject_csp_nonce():
+    return {'csp_nonce': getattr(g, 'csp_nonce', '')}
+
+
+@app.errorhandler(413)
+def request_too_large(_error):
+    if request.path.startswith('/api/') or request.is_json:
+        return jsonify({'error': 'Request body exceeds the 1 MB limit.'}), 413
+    return render_template('auth_result.html', title='Request too large',
+                           message='The submitted request exceeds the allowed size.',
+                           success=False), 413
 
 
 def _bootstrap_database() -> None:
@@ -120,8 +150,8 @@ def bootstrap_database_command() -> None:
     logger.info('Database bootstrap completed')
 
 
-# Production runs `flask --app app bootstrap` as a release/pre-deploy
-# command. Keeping this out of worker imports prevents migration races.
+# The production container runs `flask --app app bootstrap` once before
+# Gunicorn. Keeping migrations out of worker imports prevents migration races.
 if not config.is_production:
     with app.app_context():
         _bootstrap_database()
@@ -168,8 +198,14 @@ def set_security_headers(response):
         "form-action 'self'; img-src 'self' data:; connect-src 'self'; "
         "font-src 'self' https://fonts.gstatic.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net"
+        f"script-src 'self' 'nonce-{g.csp_nonce}' https://unpkg.com https://cdn.jsdelivr.net; "
+        "script-src-attr 'none'"
     )
+    if (request.path.startswith('/api/') or request.path.startswith('/admin')
+            or request.path.startswith('/settings') or request.path.startswith('/dashboard')
+            or request.path.startswith('/vault')):
+        response.headers['Cache-Control'] = 'no-store, private'
+        response.headers['Pragma'] = 'no-cache'
     if config.is_production:
         response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains'
     return response
@@ -178,7 +214,11 @@ def set_security_headers(response):
 def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not session.get('is_admin'):
+        admin_account = db.session.get(AdminAccount, 1)
+        if (not session.get('is_admin') or not admin_account
+                or session.get('admin_auth_version') != admin_account.auth_version):
+            session.pop('is_admin', None)
+            session.pop('admin_auth_version', None)
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated
@@ -454,6 +494,7 @@ def admin_login():
             session.pop('login_session_id', None)
             session.pop('vault_token', None)
             session['is_admin'] = True
+            session['admin_auth_version'] = admin_account.auth_version
             clear_rate_limit('admin-login', ip)
             logger.info(f"Admin login success | ip={request.remote_addr}")
             return redirect(url_for('admin'))
@@ -470,7 +511,7 @@ def admin_login_2fa():
     admin_id = session.get('admin_2fa_pending')
     otp = db.session.get(AdminOTP, admin_id) if admin_id else None
     token = request.form.get('token', '').strip()
-    valid = bool(otp and otp.enabled and pyotp.TOTP(otp.secret).verify(token, valid_window=1))
+    valid = bool(otp and otp.enabled and verify_totp_once(otp, token, valid_window=1))
     if not valid and otp and otp.recovery_codes:
         hashes = json.loads(otp.recovery_codes)
         match = next((h for h in hashes if verify_recovery_code(h, token)), None)
@@ -483,6 +524,7 @@ def admin_login_2fa():
         return render_template('admin_login.html', require_2fa=True, error='Incorrect authentication code.'), 401
     session.clear()
     session['is_admin'] = True
+    session['admin_auth_version'] = db.session.get(AdminAccount, admin_id).auth_version
     clear_rate_limit('admin-2fa', ip)
     return redirect(url_for('admin'))
 
@@ -523,6 +565,7 @@ def admin_reset_password(token):
             error = 'Passwords do not match.'
         else:
             admin_account.password_hash = generate_password_hash(password)
+            admin_account.auth_version += 1
             db.session.commit()
             session.clear()
             return redirect(url_for('admin_login'))
@@ -552,6 +595,7 @@ def admin_change_password():
     if password != confirm:
         return jsonify({'error': 'Passwords do not match.'}), 400
     admin_account.password_hash = generate_password_hash(password)
+    admin_account.auth_version += 1
     db.session.commit()
     session.clear()
     return jsonify({'status': 'ok'})
@@ -564,11 +608,18 @@ def admin_2fa_setup():
     otp = db.session.get(AdminOTP, 1)
     if otp and otp.enabled:
         return jsonify({'error': 'Two-factor authentication is already enabled.'}), 400
+    data = request.get_json(silent=True) or {}
+    if not check_password_hash(admin_account.password_hash, data.get('password', '')):
+        return jsonify({'error': 'Confirm your administrator password to configure two-factor authentication.'}), 401
+    ip = request.remote_addr or 'unknown'
+    if consume_rate_limit('admin-2fa-setup', ip, 5, 15 * 60):
+        return jsonify({'error': 'Too many setup attempts. Try again later.'}), 429
     secret = pyotp.random_base32()
     if otp:
-        otp.secret = secret
+        otp.secret = encrypt_totp_secret(secret)
+        otp.last_used_step = None
     else:
-        otp = AdminOTP(admin_id=1, secret=secret, enabled=False)
+        otp = AdminOTP(admin_id=1, secret=encrypt_totp_secret(secret), enabled=False)
         db.session.add(otp)
     db.session.commit()
     uri = pyotp.TOTP(secret).provisioning_uri(name=admin_account.email or 'Administrator', issuer_name='BambiVault Admin')
@@ -581,14 +632,18 @@ def admin_2fa_setup():
 @app.route('/api/admin/2fa/verify', methods=['POST'])
 @admin_required
 def admin_2fa_verify():
+    ip = request.remote_addr or 'unknown'
+    if consume_rate_limit('admin-2fa-enable', ip, 8, 5 * 60):
+        return jsonify({'error': 'Too many verification attempts. Try again later.'}), 429
     otp = db.session.get(AdminOTP, 1)
     token = (request.get_json(silent=True) or {}).get('token', '').strip()
-    if not otp or not pyotp.TOTP(otp.secret).verify(token, valid_window=1):
+    if not otp or not verify_totp_once(otp, token, valid_window=1):
         return jsonify({'error': 'Incorrect authentication code.'}), 401
     codes = [secrets.token_hex(4).upper() for _ in range(10)]
     otp.enabled = True
     otp.recovery_codes = json.dumps([hash_recovery_code(code) for code in codes])
     db.session.commit()
+    clear_rate_limit('admin-2fa-enable', ip)
     return jsonify({'status': 'ok', 'recovery_codes': codes})
 
 
@@ -677,8 +732,10 @@ def analyse():
         'strength_label':    label,
         'strength_score':    score,
         'model_confidence':  confidence,
+        'classification_basis': 'experimental_feature_model',
         'behaviour_profile': profile,
         'entropy':           feats['entropy'],
+        'character_entropy_bits_per_character': feats['entropy'],
         'features':          feats,
         'flags':             feats['flags'],
         'breach_found':      breach_result['is_breached'],
@@ -836,10 +893,10 @@ def _generate_user_overall_recommendations(total, breached, avg_entropy,
             f"{round(weak_rate)}% of your analysed passwords are weak or very weak; "
             "prioritise longer, unique passphrases and save them in the encrypted vault."
         )
-    elif avg_entropy < 80:
+    elif avg_entropy < 3:
         recommendations.append(
-            f"Your average entropy is {avg_entropy:.1f} bits; increase password length "
-            "and randomness to move closer to the 80-bit target."
+            f"Your average observed character entropy is {avg_entropy:.1f} bits per character; "
+            "use longer, unique passwords and avoid predictable structures."
         )
 
     if not recommendations:

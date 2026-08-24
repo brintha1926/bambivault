@@ -32,7 +32,7 @@
   {% block public_content %}{% endblock %}
 </main>
 
-<script>
+<script nonce="{{ csp_nonce }}">
   lucide.createIcons();
   (function() {
     if (window.bvToast) return;

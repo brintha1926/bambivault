@@ -3,7 +3,7 @@
 import pytest
 from werkzeug.security import generate_password_hash
 
-from models import db, User
+from models import db, User, UserSession
 
 
 @pytest.mark.parametrize(
@@ -24,9 +24,13 @@ def test_secure_export_does_not_fail_when_vault_is_locked(
         db.session.add(user)
         db.session.commit()
         user_id = user.id
+        tracked = UserSession(user_id=user.id, session_token=f"export-session-{fmt}")
+        db.session.add(tracked)
+        db.session.commit()
 
     with client.session_transaction() as session:
         session["user_id"] = user_id
+        session["login_session_id"] = f"export-session-{fmt}"
         session.pop("vault_token", None)
 
     response = client.post(

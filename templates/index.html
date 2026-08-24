@@ -12,14 +12,14 @@
   </div>
 
   <div class="panel mb-5">
-    <form class="mb-3" id="analyseForm" onsubmit="analysePassword(); return false;">
+    <form class="mb-3" id="analyseForm">
       <label class="field-label" for="pwInput">Password</label>
       <div class="analyser-control-row">
         <div class="input-with-icon analyser-input-row">
           <span class="icon"><i data-lucide="lock" class="w-4 h-4"></i></span>
-          <input type="password" id="pwInput" placeholder="Enter a password to analyse..." oninput="liveCheck(this.value)"
+          <input type="password" id="pwInput" placeholder="Enter a password to analyse..."
             class="input" autocomplete="off" data-form-type="other" data-lpignore="true" aria-describedby="charCount">
-          <button onclick="toggleVis()" id="tvBtn" type="button" aria-label="Show password" aria-pressed="false"
+          <button id="tvBtn" type="button" aria-label="Show password" aria-pressed="false"
             class="input-action analyser-eye">
             <i data-lucide="eye" class="w-4 h-4" id="tvIcon"></i>
           </button>
@@ -54,7 +54,7 @@
         <div class="ss-val" id="rClass">—</div>
       </div>
       <div class="ss-item">
-        <div class="ss-label">Entropy (bits)</div>
+        <div class="ss-label">Character entropy</div>
         <div class="ss-val" id="rEntropy">—</div>
       </div>
       <div class="ss-item">
@@ -75,7 +75,7 @@
         </div>
         <span class="reccount" id="variantCount"></span>
       </div>
-      <button id="strengthenBtn" onclick="strengthenPassword()" class="btn btn-secondary">
+      <button id="strengthenBtn" class="btn btn-secondary">
         <span id="strBtnTxt">Suggest stronger variants</span>
       </button>
       <div class="variant-grid" id="variantGrid"></div>
@@ -140,7 +140,11 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
+document.getElementById('analyseForm').addEventListener('submit', function(event) { event.preventDefault(); analysePassword(); });
+document.getElementById('pwInput').addEventListener('input', function() { liveCheck(this.value); });
+document.getElementById('tvBtn').addEventListener('click', toggleVis);
+document.getElementById('strengthenBtn').addEventListener('click', strengthenPassword);
 const SC=['#dc2626','#ea580c','#d97706','#059669','#0d9488'];
 const SL=['Very Weak','Weak','Medium','Strong','Very Strong'];
 const SW=[12,30,52,74,100];
@@ -232,7 +236,7 @@ function renderResults(d){
     {k:'num_lower',l:'Lowercase',ic:'M4 18l4-4 4 4M4 6h16'},
     {k:'num_digits',l:'Digits',ic:'M4 9h16M4 15h16'},
     {k:'num_special',l:'Special characters',ic:'M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z'},
-    {k:'entropy',l:'Entropy',ic:'M3 12h4l3-9 4 18 3-9h4'}
+    {k:'entropy',l:'Character entropy',ic:'M3 12h4l3-9 4 18 3-9h4'}
   ];
   document.getElementById('featList').innerHTML=fdefs.map(function(f){
     var c=fc[f.k]||'#475569';
@@ -264,7 +268,7 @@ function renderResults(d){
 
   document.getElementById('bVerdict').textContent=d.breach_found?'Found in breach database':'Not in breach database';
   document.getElementById('bVerdict').style.color=rc;
-  document.getElementById('bSub').textContent=d.breach_found?d.breach_count.toLocaleString()+' known exposures':'k-Anonymity protocol passed · 847M+ checked';
+  document.getElementById('bSub').textContent=d.breach_found?d.breach_count.toLocaleString()+' known exposures':'No match returned by the HIBP range lookup';
 
   document.querySelectorAll('.tier').forEach(function(t,i){
     if(i===rl){t.style.background=rc+'15';t.style.color=rc;t.style.borderColor=rc+'66';t.style.fontWeight='800';t.classList.add('tier-on');}
@@ -320,7 +324,7 @@ function renderVariants(variants){
       '<button class="variant-copy" data-copy="'+escapeHTML(v.password)+'" aria-label="Copy suggested password" title="Copy password"><i data-lucide="copy" aria-hidden="true"></i></button>'+
       '<span class="variant-pw">'+escapeHTML(v.password)+'</span>'+
       '<span class="variant-meta" style="color:'+SC[v.strength_score]+'">'+escapeHTML(v.strength_label)+'</span>'+
-      '<span class="variant-meta"> · '+v.entropy+' bits</span>'+
+      '<span class="variant-meta"> · '+v.entropy+' bits/character</span>'+
       '<span class="variant-reason">'+escapeHTML(v.reason || 'Improved password structure')+'</span>'+
     '</div>';
   }).join('');

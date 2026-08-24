@@ -226,8 +226,15 @@ def _get_cache(prefix: str):
         if row:
             result_json, cached_at = row
             if time.time() - cached_at < CACHE_EXPIRY_SECONDS:
-                conn.close()
-                return _json.loads(result_json)
+                value = _json.loads(result_json)
+                # Legacy rows stored one password's final assessment under a
+                # shared prefix. Ignore them; current rows contain HIBP suffixes.
+                if isinstance(value, dict) and all(
+                        len(str(key)) == 35 for key in value.keys()):
+                    conn.close()
+                    return value
+                conn.execute("DELETE FROM breach_cache WHERE prefix = ?", (prefix,))
+                conn.commit()
             # expired — remove it
             conn.execute("DELETE FROM breach_cache WHERE prefix = ?", (prefix,))
             conn.commit()
@@ -385,18 +392,26 @@ def check_breach(password: str) -> dict:
     suffix    = full_hash[5:]
 
     # Step 3 — Rate limiter
+    cached = _get_cache(prefix)
+    if cached is not None:
+        breach_count = cached.get(suffix, 0)
+        risk_label, risk_score, risk_colour, risk_advice = _compute_composite_risk(
+            breach_count, local["local_risk_boost"], local["is_locally_known"]
+        )
+        return {
+            "is_breached": breach_count > 0 or local["is_locally_known"],
+            "breach_count": breach_count,
+            "risk_label": risk_label, "risk_score": risk_score,
+            "risk_colour": risk_colour, "risk_advice": risk_advice,
+            "hash_prefix": prefix, "api_status": "cached",
+            "local_patterns": local["matched_patterns"],
+            "locally_known": local["is_locally_known"],
+            "breach_age": get_breach_age(prefix),
+            "checked_at": datetime.utcnow().isoformat(),
+        }
+
     if _is_rate_limited(prefix):
         return _error_result("rate_limited", prefix)
-
-    # Step 4 — Cache check
-    cached = _get_cache(prefix)
-    if cached:
-        # Re-run local checks on cached result (they're free)
-        cached["api_status"]       = "cached"
-        cached["local_patterns"]   = local["matched_patterns"]
-        cached["locally_known"]    = local["is_locally_known"]
-        cached["breach_age"]       = get_breach_age(prefix)
-        return cached
 
     # Step 5 — HIBP API query
     api_resp = _query_hibp(prefix)
@@ -446,7 +461,7 @@ def check_breach(password: str) -> dict:
         "checked_at":     datetime.utcnow().isoformat()
     }
 
-    _set_cache(prefix, result)
+    _set_cache(prefix, api_resp["hashes"])
     result["breach_age"] = get_breach_age(prefix)
     return result
 

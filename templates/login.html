@@ -71,7 +71,7 @@
       </form>
 
       <p class="auth-link">
-        <a href="#" onclick="cancelTwoFA(); return false;">Back to sign in</a>
+        <a href="#" id="cancelTwoFALink">Back to sign in</a>
       </p>
     </div>
 
@@ -80,7 +80,8 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
+document.getElementById('cancelTwoFALink')?.addEventListener('click', function(event) { event.preventDefault(); cancelTwoFA(); });
 (function() {
   // Show / hide password toggle
   document.querySelectorAll('[data-toggle-pw]').forEach(function(btn) {

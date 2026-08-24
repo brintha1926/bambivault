@@ -17,7 +17,7 @@
       <span class="landing-glow landing-glow-two"></span>
     </div>
     <h1 class="landing-title"><span class="hl">Behaviour-based credential</span><span class="title-dark">risk classification</span></h1>
-    <p class="landing-sub">Trained on 14 million real leaked passwords. Checked against 847 million known breaches and provides targeted guidance for detected weaknesses.</p>
+    <p class="landing-sub">Evaluate password structure, detect predictable behaviours, and check known breach exposure through a privacy-preserving range query.</p>
     <div class="landing-cta-row">
       <a href="{{ url_for('analyser_page') }}" class="btn btn-primary">Analyse a password</a>
       <a href="{{ url_for('register') }}" class="btn btn-ghost">Create an account</a>
@@ -32,9 +32,9 @@
   </div>
 
   <div class="stats-bar">
-    <div class="stat-item"><div class="snum">14M+</div><div class="slbl">Training passwords</div></div>
-    <div class="stat-item"><div class="snum">847M+</div><div class="slbl">Breach records checked</div></div>
-    <div class="stat-item"><div class="snum">82%</div><div class="slbl">Model accuracy</div></div>
+    <div class="stat-item"><div class="snum">14M+</div><div class="slbl">Training records</div></div>
+    <div class="stat-item"><div class="snum">Live</div><div class="slbl">HIBP range lookup</div></div>
+    <div class="stat-item"><div class="snum">10</div><div class="slbl">Structural signals</div></div>
     <div class="stat-item"><div class="snum">&lt;1s</div><div class="slbl">Per analysis</div></div>
   </div>
 
@@ -47,7 +47,7 @@
       <div class="feature-card">
         <div class="fc-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="9"/></svg></div>
         <h3>Machine-learning classification</h3>
-        <p>A Random Forest model trained on real-world leaked passwords evaluates security across five strength categories, beyond conventional composition rules.</p>
+        <p>An experimental Random Forest classifier evaluates ten structural and behavioural signals across five strength categories. Its result is presented with pattern and breach evidence.</p>
       </div>
       <div class="feature-card">
         <div class="fc-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L4 6v6c0 5.25 3.5 10.14 8 11.35C16.5 22.14 20 17.25 20 12V6L12 2z"/></svg></div>
@@ -81,7 +81,7 @@
     </div>
     <div class="methodology-panel">
       <div class="method-item"><div class="mi-dot"></div><div><h4>Real-world training data</h4><p>The classification model is trained using the RockYou dataset, a widely recognised corpus for password-security research.</p></div></div>
-      <div class="method-item"><div class="mi-dot"></div><div><h4>Validated machine-learning model</h4><p>The Random Forest classifier achieved 82% test accuracy across five strength categories after controls were introduced to prevent feature-label leakage.</p></div></div>
+      <div class="method-item"><div class="mi-dot"></div><div><h4>Feature-based classification</h4><p>The Random Forest classifier is an experimental component trained on derived structural labels. Its classification is not presented as a password-cracking estimate.</p></div></div>
       <div class="method-item"><div class="mi-dot"></div><div><h4>Privacy-preserving exposure checks</h4><p>Breach intelligence uses a five-character hash prefix. The complete password is never submitted to the external provider.</p></div></div>
       <div class="method-item"><div class="mi-dot"></div><div><h4>Behavioural risk detection</h4><p>BambiVault identifies keyboard walks, names with years, substitutions, and dictionary words that conventional strength meters may overlook.</p></div></div>
     </div>

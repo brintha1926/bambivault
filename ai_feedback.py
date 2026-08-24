@@ -3,6 +3,8 @@
 import os
 import json
 import sqlite3
+import time
+import hashlib
 import requests
 from security_utils import consume_rate_limit
 
@@ -45,9 +47,13 @@ def _cache_db_connect():
     return conn
 
 
-def _make_cache_key(label: str, profile: str, flags: list, breached: bool) -> str:
+def _make_cache_key(label: str, score: int, profile: str, flags: list,
+                    entropy: float, length: int, breach_result: dict) -> str:
     flags_key = ','.join(sorted(flags)) if flags else 'none'
-    return f"{label}|{profile}|{flags_key}|{'breached' if breached else 'clean'}"
+    material = (f"v2|{label}|{score}|{profile}|{flags_key}|{entropy:.4f}|{length}|"
+                f"{breach_result.get('risk_label', 'Unknown')}|"
+                f"{breach_result.get('breach_count', 0)}")
+    return hashlib.sha256(material.encode('utf-8')).hexdigest()
 
 
 def _get_cache(key: str):
@@ -115,7 +121,7 @@ def _build_prompt(label: str, score: int, profile: str, flags: list,
         f"Behavioural profile: {profile}\n"
         f"Detected pattern flags: {flags_str}\n"
         f"Password length: {length} characters\n"
-        f"Entropy: {entropy} bits\n"
+        f"Observed character entropy: {entropy} bits per character\n"
         f"Breach status: {breach_line}\n\n"
         "Respond with ONLY a JSON array of strings — no preamble, no "
         'explanation, no markdown code fences. Example: '
@@ -179,7 +185,7 @@ def get_ai_recommendations(ip: str, label: str, score: int, profile: str,
                             flags: list, entropy: float, length: int,
                             breach_result: dict) -> dict:
     """Return cached or generated recommendations and their source."""
-    cache_key = _make_cache_key(label, profile, flags, breach_result.get('is_breached', False))
+    cache_key = _make_cache_key(label, score, profile, flags, entropy, length, breach_result)
 
     cached = _get_cache(cache_key)
     if cached:

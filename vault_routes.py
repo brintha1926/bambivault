@@ -9,6 +9,7 @@ from flask import Blueprint, request, jsonify, session, render_template, redirec
 from werkzeug.security import generate_password_hash, check_password_hash
 import pyotp
 import qrcode
+from xml.sax.saxutils import escape
 
 from models import db, User, VaultEntry, PasswordLog, UserOTP, UserSession
 from feature_extraction import extract_features
@@ -20,6 +21,9 @@ from security_utils import (
     clear_rate_limit,
     consume_rate_limit,
     hash_recovery_code,
+    encrypt_totp_secret,
+    verify_totp_once,
+    normalise_username,
     valid_email,
     valid_username,
     verify_recovery_code,
@@ -32,9 +36,20 @@ vault_bp = Blueprint('vault_bp', __name__)
 
 def _current_user():
     uid = session.get('user_id')
-    if not uid:
+    login_sid = session.get('login_session_id')
+    if not uid or not login_sid:
         return None
-    return User.query.get(uid)
+    tracked = UserSession.query.filter_by(user_id=uid, session_token=login_sid).first()
+    if not tracked:
+        token = session.pop('vault_token', None)
+        if token:
+            vc.clear_vault_key(token)
+        session.pop('user_id', None)
+        session.pop('login_session_id', None)
+        return None
+    tracked.last_activity = __import__('datetime').datetime.utcnow()
+    db.session.commit()
+    return db.session.get(User, uid)
 
 
 def _current_vault_key():
@@ -79,7 +94,7 @@ def register():
         return jsonify({'error': 'Too many registration attempts. Try again later.'}), 429
     data     = request.get_json(silent=True) or {}
     email    = data.get('email', '').strip().lower()
-    username = data.get('username', '').strip()
+    username = normalise_username(data.get('username', ''))
     password = data.get('password', '')
     confirm_password = data.get('confirm_password')
 
@@ -92,7 +107,7 @@ def register():
     if confirm_password is not None and password != confirm_password:
         return jsonify({'error': 'Passwords do not match.'}), 400
 
-    if User.query.filter((User.email == email) | (User.username == username)).first():
+    if User.query.filter((User.email == email) | (db.func.lower(User.username) == username)).first():
         return jsonify({'error': 'An account with that email or username already exists.'}), 409
 
     user = User(email=email, username=username,
@@ -116,7 +131,7 @@ def login():
     password   = data.get('password', '')
 
     user = User.query.filter(
-        (User.email == identifier) | (User.username == identifier)
+        (User.email == identifier) | (db.func.lower(User.username) == identifier)
     ).first()
 
     if not user or not check_password_hash(user.password_hash, password):
@@ -160,7 +175,9 @@ def login_2fa_verify():
     verified = False
 
     if token:
-        verified = pyotp.TOTP(otp.secret).verify(token, valid_window=1)
+        verified = verify_totp_once(otp, token, valid_window=1)
+        if verified:
+            db.session.commit()
     elif recovery_code:
         codes = json.loads(otp.recovery_codes or '[]')
         for i, hashed in enumerate(codes):
@@ -227,7 +244,7 @@ def resend_verification():
         if consume_rate_limit('verification-resend-ip', ip, 5, 3600):
             return jsonify({'status': 'ok'})
         if identifier:
-            user = User.query.filter((User.email == identifier) | (User.username == identifier)).first()
+            user = User.query.filter((User.email == identifier) | (db.func.lower(User.username) == identifier)).first()
     if user and not user.email_verified:
         eu.send_verification_email(user)
     return jsonify({'status': 'ok'})
@@ -296,12 +313,13 @@ def do_reset_password(token):
     password = data.get('password', '')
     confirm  = data.get('confirm', '')
 
-    if len(password) < 8:
-        return jsonify({'error': 'Password must be at least 8 characters.'}), 400
+    if len(password) < 8 or len(password) > 256:
+        return jsonify({'error': 'Password must contain between 8 and 256 characters.'}), 400
     if password != confirm:
         return jsonify({'error': 'Passwords do not match.'}), 400
 
     user.password_hash = generate_password_hash(password)
+    UserSession.query.filter_by(user_id=user.id).delete()
     db.session.commit()
 
     # Login-password recovery does not change vault credentials.
@@ -326,15 +344,22 @@ def setup_2fa():
     if not user:
         return jsonify({'error': 'Not logged in.'}), 401
 
+    data = request.get_json(silent=True) or {}
+    if not check_password_hash(user.password_hash, data.get('password', '')):
+        return jsonify({'error': 'Confirm your account password to configure two-factor authentication.'}), 401
+    ip, _ = _client_info()
+    if consume_rate_limit('user-2fa-setup', f'{user.id}:{ip}', 5, 15 * 60):
+        return jsonify({'error': 'Too many setup attempts. Try again later.'}), 429
     otp = UserOTP.query.filter_by(user_id=user.id).first()
     if otp and otp.enabled:
         return jsonify({'error': '2FA is already enabled. Disable it first to reconfigure.'}), 400
 
     secret = pyotp.random_base32()
     if otp:
-        otp.secret = secret
+        otp.secret = encrypt_totp_secret(secret)
+        otp.last_used_step = None
     else:
-        otp = UserOTP(user_id=user.id, secret=secret, enabled=False)
+        otp = UserOTP(user_id=user.id, secret=encrypt_totp_secret(secret), enabled=False)
         db.session.add(otp)
     db.session.commit()
 
@@ -358,6 +383,9 @@ def verify_2fa():
     if not user:
         return jsonify({'error': 'Not logged in.'}), 401
 
+    ip, _ = _client_info()
+    if consume_rate_limit('user-2fa-enable', f'{user.id}:{ip}', 8, 5 * 60):
+        return jsonify({'error': 'Too many verification attempts. Try again later.'}), 429
     otp = UserOTP.query.filter_by(user_id=user.id).first()
     if not otp:
         return jsonify({'error': '2FA setup was not started. Please try again.'}), 400
@@ -367,7 +395,7 @@ def verify_2fa():
     data  = request.get_json(silent=True) or {}
     token = data.get('token', '').strip()
 
-    if not pyotp.TOTP(otp.secret).verify(token, valid_window=1):
+    if not verify_totp_once(otp, token, valid_window=1):
         return jsonify({'error': 'Incorrect code. Check your authenticator app and try again.'}), 401
 
     import secrets as _secrets
@@ -375,6 +403,7 @@ def verify_2fa():
     otp.recovery_codes = json.dumps([hash_recovery_code(c) for c in codes])
     otp.enabled = True
     db.session.commit()
+    clear_rate_limit('user-2fa-enable', f'{user.id}:{ip}')
 
     return jsonify({'status': 'ok', 'recovery_codes': codes})
 
@@ -509,8 +538,8 @@ def export_secure():
     data = request.get_json(silent=True) or {}
     fmt = data.get('format', 'pdf')
     password = data.get('password', '')
-    if len(password) < 6:
-        return jsonify({'error': 'Choose a protection password of at least 6 characters.'}), 400
+    if len(password) < 12 or len(password) > 256:
+        return jsonify({'error': 'Choose a protection password of 12 to 256 characters.'}), 400
 
     logs = PasswordLog.query.filter_by(user_id=user.id).order_by(PasswordLog.submitted_at.desc()).all()
     key = _current_vault_key()
@@ -522,21 +551,23 @@ def export_secure():
         from reportlab.lib.styles import getSampleStyleSheet
         buf = io.BytesIO()
         enc = StandardEncryption(password, password + '_owner',
-                                  canPrint=1, canModify=0, canCopy=0, canAnnotate=0)
+                                  canPrint=1, canModify=0, canCopy=0, canAnnotate=0,
+                                  strength=256)
         doc = SimpleDocTemplate(buf, pagesize=A4, encrypt=enc)
         styles = getSampleStyleSheet()
         story = [Paragraph("BambiVault — Account Export", styles['Title']),
-                 Paragraph(f"User: {user.username}", styles['Normal']), Spacer(1, 12)]
+                 Paragraph(f"User: {escape(user.username)}", styles['Normal']), Spacer(1, 12)]
         for l in logs:
             d = l.to_dict()
-            story.append(Paragraph(f"{d['submitted_at']} — {d['strength_label']} — "
-                                    f"breach: {d['breach_exposed']}", styles['Normal']))
+            story.append(Paragraph(escape(f"{d['submitted_at']} — {d['strength_label']} — "
+                                    f"breach: {d['breach_exposed']}"), styles['Normal']))
         if entries:
             story.append(Spacer(1, 16))
             story.append(Paragraph("Vault entries", styles['Heading2']))
             for e in entries:
-                story.append(Paragraph(f"{e['site_name']} — {e['username']} — {e['password']}",
-                                        styles['Normal']))
+                story.append(Paragraph(escape(
+                    f"{e['site_name']} — {e['username']} — {e['password']}"
+                ), styles['Normal']))
         doc.build(story)
         buf.seek(0)
         return send_file(buf, mimetype='application/pdf', as_attachment=True,
@@ -561,10 +592,10 @@ def update_username():
     if not user:
         return jsonify({'error': 'Not logged in.'}), 401
     data = request.get_json(silent=True) or {}
-    new_username = data.get('username', '').strip()
+    new_username = normalise_username(data.get('username', ''))
     if not valid_username(new_username):
         return jsonify({'error': 'Username must be 3–50 characters and use only letters, numbers, dots, hyphens, or underscores.'}), 400
-    if User.query.filter(User.username == new_username, User.id != user.id).first():
+    if User.query.filter(db.func.lower(User.username) == new_username, User.id != user.id).first():
         return jsonify({'error': 'That username is already taken.'}), 409
     user.username = new_username
     db.session.commit()

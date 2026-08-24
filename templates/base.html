@@ -27,7 +27,7 @@
            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:flex'"
            :aria-hidden="(sidebarOpen ? 'false' : (isDesktop ? 'false' : 'true'))"
            :inert="(!sidebarOpen && !isDesktop) ? true : null"
-           class="sidebar -translate-x-full md:translate-x-0 flex fixed inset-y-0 left-0 z-40 transition-transform duration-300 md:sticky md:flex"
+           class="sidebar -translate-x-full md:translate-x-0 flex fixed inset-y-0 left-0 z-40 transition-transform duration-300 md:flex"
            x-cloak>
         <div class="sidebar-brand">
             <a href="{{ url_for('index') }}" class="sidebar-brand-link" aria-label="BambiVault home">
@@ -118,7 +118,7 @@
                 <i data-lucide="menu" class="w-5 h-5"></i>
             </button>
 
-            <form class="topbar-search hidden sm:block" onsubmit="return submitGlobalSearch(event)">
+            <form id="globalSearchForm" class="topbar-search hidden sm:block">
                 <i data-lucide="search" class="search-icon w-4 h-4"></i>
                 <input id="globalSearch" type="search" name="bv_search_query" placeholder="Search your history — press Enter"
                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
@@ -189,7 +189,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 document.addEventListener('alpine:init', function() {
   Alpine.data('bvDrawer', function() {
     return {
@@ -241,6 +241,11 @@ document.addEventListener('alpine:init', function() {
       }
     };
   });
+});
+
+document.getElementById('globalSearchForm')?.addEventListener('submit', function(event) {
+  event.preventDefault();
+  submitGlobalSearch(event);
 });
 
 /* Global keydown: Escape closes drawer, Tab contains focus when open */

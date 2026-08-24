@@ -39,7 +39,7 @@
           <label class="field-label" for="profileCreated">Member since</label>
           <input class="input settings-readonly" id="profileCreated" disabled>
         </div>
-        <button class="btn btn-primary" type="button" onclick="saveUsername()">Save changes</button>
+        <button class="btn btn-primary" id="saveUsernameButton" type="button">Save changes</button>
       </div>
 
       <!-- SECURITY -->
@@ -53,7 +53,7 @@
             </div>
             <div class="settings-action-controls">
               <span id="verifyStatus">Checking…</span>
-              <button class="btn btn-ghost btn-sm" type="button" id="resendVerify" onclick="resendVerification()">Resend email</button>
+              <button class="btn btn-ghost btn-sm" type="button" id="resendVerify">Resend email</button>
             </div>
           </div>
           <div class="settings-action-row">
@@ -76,7 +76,8 @@
         </div>
 
         <div id="twofaOff">
-          <button class="btn btn-primary" type="button" onclick="start2FASetup()">Set up 2FA</button>
+          <div class="field"><label class="field-label" for="setup2FAPassword">Account password</label><input class="input" type="password" id="setup2FAPassword" autocomplete="current-password"></div>
+          <button class="btn btn-primary" id="start2FAButton" type="button">Set up 2FA</button>
         </div>
 
         <div id="twofaSetupBox" class="hidden">
@@ -89,7 +90,7 @@
             <label class="field-label" for="twofaToken">Enter the 6-digit code from your app</label>
             <div class="flex gap-2">
               <input class="input" id="twofaToken" placeholder="123456" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
-              <button class="btn btn-primary" type="button" onclick="verify2FA()" style="white-space:nowrap">Verify &amp; enable</button>
+              <button class="btn btn-primary" id="verify2FAButton" type="button" style="white-space:nowrap">Verify &amp; enable</button>
             </div>
             <div class="field-error mt-2" id="twofaSetupErr" role="alert"></div>
           </div>
@@ -101,7 +102,7 @@
             <span><strong>Save these recovery codes now.</strong> Each works once, and this is the only time they're shown. If you lose your authenticator app, a recovery code is the only way back in.</span>
           </div>
           <div class="recovery-codes" id="recoveryCodesGrid"></div>
-          <button class="btn btn-secondary" type="button" onclick="finishTwoFASetup()">I have securely saved these codes</button>
+          <button class="btn btn-secondary" id="finish2FAButton" type="button">I have securely saved these codes</button>
         </div>
 
         <div id="twofaOn" class="hidden">
@@ -113,7 +114,7 @@
                 <input class="input" type="password" id="disable2FAPassword" autocomplete="current-password" data-form-type="password" data-lpignore="true">
                 <button type="button" class="input-action settings-eye" data-toggle-pw="disable2FAPassword" aria-label="Show account password" aria-pressed="false"><i data-lucide="eye" aria-hidden="true"></i></button>
               </div>
-              <button class="btn btn-danger" type="button" onclick="disable2FA()" style="white-space:nowrap">Disable 2FA</button>
+              <button class="btn btn-danger" id="disable2FAButton" type="button" style="white-space:nowrap">Disable 2FA</button>
             </div>
             <div class="field-error mt-2" id="twofaDisableErr" role="alert"></div>
           </div>
@@ -140,7 +141,7 @@
             <div class="settings-action-title">Reset vault</div>
             <div class="settings-action-desc">Erase all saved credentials and create new vault credentials.</div>
           </div>
-          <button class="btn btn-danger btn-sm" type="button" onclick="openResetVaultDialog()">Reset</button>
+          <button class="btn btn-danger btn-sm" id="resetVaultButton" type="button">Reset</button>
         </div>
       </div>
 
@@ -155,7 +156,7 @@
             <option value="60">1 hour</option>
             <option value="240">4 hours</option>
           </select>
-          <button class="btn btn-primary btn-sm" type="button" onclick="saveAutoLock()">Save timeout</button>
+          <button class="btn btn-primary btn-sm" id="saveAutoLockButton" type="button">Save timeout</button>
           <span class="text-sm text-success" id="autoLockSaved" style="display:none" role="status" aria-live="polite">Saved ✓</span>
         </div>
       </div>
@@ -193,7 +194,7 @@
           </div>
         </div>
         <div class="field-error mb-3" id="deleteErr" role="alert"></div>
-        <button class="btn btn-danger" type="button" onclick="openConfirm('deleteAccount')">Delete my account</button>
+        <button class="btn btn-danger" id="deleteAccountButton" type="button">Delete my account</button>
       </div>
     </div>
   </div>
@@ -234,7 +235,16 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
+document.getElementById('saveUsernameButton')?.addEventListener('click', saveUsername);
+document.getElementById('resendVerify')?.addEventListener('click', resendVerification);
+document.getElementById('start2FAButton')?.addEventListener('click', start2FASetup);
+document.getElementById('verify2FAButton')?.addEventListener('click', verify2FA);
+document.getElementById('finish2FAButton')?.addEventListener('click', finishTwoFASetup);
+document.getElementById('disable2FAButton')?.addEventListener('click', disable2FA);
+document.getElementById('resetVaultButton')?.addEventListener('click', openResetVaultDialog);
+document.getElementById('saveAutoLockButton')?.addEventListener('click', saveAutoLock);
+document.getElementById('deleteAccountButton')?.addEventListener('click', function() { openConfirm('deleteAccount'); });
 // Show / hide password toggle
 document.querySelectorAll('[data-toggle-pw]').forEach(function(btn){
   btn.addEventListener('click', function(){
@@ -334,9 +344,14 @@ function render2FAStatus(enabled){
 
 async function start2FASetup(){
   try {
-    var r = await fetch('/api/account/2fa/setup', {method:'POST'});
+    var password = document.getElementById('setup2FAPassword').value;
+    var r = await fetch('/api/account/2fa/setup', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:password})
+    });
     var d = await r.json();
     if(d.error){ if (window.bvToast) window.bvToast({ kind: 'danger', message: d.error }); else alert(d.error); return; }
+    document.getElementById('setup2FAPassword').value = '';
     document.getElementById('twofaQR').src = d.qr_data;
     document.getElementById('twofaSecret').textContent = d.secret;
     document.getElementById('twofaOff').classList.add('hidden');
@@ -426,9 +441,14 @@ async function loadSessions(){
           '<strong>'+escapeHTML(s.user_agent.slice(0,60))+' '+(s.is_current ? '<span class="session-current">This device</span>' : '')+'</strong>'+
           '<small>'+escapeHTML(s.ip_address)+' · last active '+escapeHTML(s.last_activity)+' · signed in '+escapeHTML(s.created_at)+'</small>'+
         '</div>'+
-        '<button class="btn btn-danger btn-sm" type="button" onclick="openRevokeSession('+s.id+','+s.is_current+')">'+(s.is_current ? 'Sign out' : 'Revoke')+'</button>'+
+        '<button class="btn btn-danger btn-sm revoke-session-button" type="button" data-session-id="'+s.id+'" data-current="'+s.is_current+'">'+(s.is_current ? 'Sign out' : 'Revoke')+'</button>'+
       '</div>';
     }).join('');
+    box.querySelectorAll('.revoke-session-button').forEach(function(button) {
+      button.addEventListener('click', function() {
+        openRevokeSession(Number(button.dataset.sessionId), button.dataset.current === 'true');
+      });
+    });
   }catch(e){
     box.innerHTML = '<p class="text-sm text-text-muted">Could not load sessions.</p>';
   }

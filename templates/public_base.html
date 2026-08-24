@@ -3,6 +3,10 @@
 <head>
 {% include '_shared_head.html' %}
 <title>{% block title %}BambiVault{% endblock %}</title>
+<meta name="description" content="{% block meta_description %}Secure access to BambiVault password analysis and account services.{% endblock %}">
+<meta name="robots" content="{% block seo_robots %}noindex, nofollow{% endblock %}">
+{% block canonical %}{% endblock %}
+{% block social_meta %}{% endblock %}
 {% block extra_head %}{% endblock %}
 </head>
 <body class="font-sans text-text-primary antialiased">

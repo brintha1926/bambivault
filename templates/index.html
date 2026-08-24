@@ -1,5 +1,16 @@
 {% extends "base.html" %}
 {% block title %}BambiVault — Password Security Analyser{% endblock %}
+{% block meta_description %}Evaluate password structure, behavioural weaknesses, estimated resistance, and known breach exposure with the BambiVault password analyser.{% endblock %}
+{% block seo_robots %}index, follow, max-image-preview:large{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ seo_base_url }}/analyser">{% endblock %}
+{% block social_meta %}
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BambiVault">
+<meta property="og:title" content="BambiVault Password Security Analyser">
+<meta property="og:description" content="Evaluate password structure, behavioural weaknesses, and known breach exposure.">
+<meta property="og:url" content="{{ seo_base_url }}/analyser">
+<meta name="twitter:card" content="summary">
+{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto">

@@ -31,7 +31,7 @@ Submitted plaintext passwords are processed for the current analysis and are not
 | Backend | Python 3, Flask, Flask-SQLAlchemy |
 | Database | Neon PostgreSQL with Alembic migrations |
 | Machine learning | scikit-learn Random Forest loaded with joblib |
-| Transactional email | Brevo HTTPS API |
+| Transactional email | Resend HTTPS API |
 | Breach intelligence | Have I Been Pwned Pwned Passwords API |
 | Frontend | Server-rendered Jinja, compiled Tailwind CSS, JavaScript, Alpine.js CSP build |
 | Testing | pytest and mypy |
@@ -116,15 +116,15 @@ Open `http://127.0.0.1:5000`.
 
 ## Optional integrations
 
-Use Brevo's HTTPS transactional API where direct SMTP is restricted:
+Use Resend's HTTPS transactional API where direct SMTP is restricted:
 
 ```dotenv
-BREVO_API_KEY="replace-with-a-Brevo-API-key"
+RESEND_API_KEY="replace-with-a-Resend-API-key"
 EMAIL_FROM="verified-sender@example.com"
 EMAIL_FROM_NAME="BambiVault"
 ```
 
-`EMAIL_FROM` must be verified by Brevo. SMTP variables remain supported as a fallback in environments that permit outbound SMTP. `GROQ_API_KEY` enables the optional AI recommendation integration; password data is not sent to that integration.
+`EMAIL_FROM` must use a domain verified by Resend. Brevo and SMTP variables remain supported as migration fallbacks. `GROQ_API_KEY` enables the optional AI recommendation integration; password data is not sent to that integration.
 
 ## Database preparation and migration
 

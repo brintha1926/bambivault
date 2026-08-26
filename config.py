@@ -72,6 +72,7 @@ class Config:
     SMTP_USER: Optional[str] = None
     SMTP_PASS: Optional[str] = None
     SMTP_FROM: Optional[str] = None
+    RESEND_API_KEY: Optional[str] = None
     BREVO_API_KEY: Optional[str] = None
     EMAIL_FROM: Optional[str] = None
     EMAIL_FROM_NAME: str = "BambiVault"
@@ -107,6 +108,7 @@ class Config:
             SMTP_USER=os.environ.get("SMTP_USER") or None,
             SMTP_PASS=os.environ.get("SMTP_PASS") or None,
             SMTP_FROM=os.environ.get("SMTP_FROM") or os.environ.get("SMTP_USER") or None,
+            RESEND_API_KEY=os.environ.get("RESEND_API_KEY") or None,
             BREVO_API_KEY=os.environ.get("BREVO_API_KEY") or None,
             EMAIL_FROM=(
                 os.environ.get("EMAIL_FROM")

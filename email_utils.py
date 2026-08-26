@@ -24,6 +24,7 @@ SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
 SMTP_USER = os.environ.get('SMTP_USER', '')
 SMTP_PASS = os.environ.get('SMTP_PASS', '')
 SMTP_FROM = os.environ.get('SMTP_FROM', SMTP_USER or 'no-reply@bambivault.local')
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
 EMAIL_FROM = os.environ.get('EMAIL_FROM', SMTP_FROM)
 EMAIL_FROM_NAME = os.environ.get('EMAIL_FROM_NAME', 'BambiVault')
@@ -38,6 +39,52 @@ _serializer = URLSafeTimedSerializer(SECRET_KEY)
 
 def _recipient_reference(to_addr: str) -> str:
     return hashlib.sha256(to_addr.strip().lower().encode('utf-8')).hexdigest()[:12]
+
+
+def _send_with_resend(
+    to_addr: str,
+    subject: str,
+    body: str,
+    html_body: str | None = None,
+) -> bool:
+    """Deliver a transactional message through Resend's HTTPS API."""
+    if not RESEND_API_KEY:
+        return False
+    if not EMAIL_FROM:
+        logger.error('Resend configuration incomplete | missing=EMAIL_FROM')
+        return False
+
+    recipient_ref = _recipient_reference(to_addr)
+    payload = {
+        'from': f'{EMAIL_FROM_NAME} <{EMAIL_FROM}>',
+        'to': [to_addr],
+        'subject': subject,
+        'text': body,
+    }
+    if html_body:
+        payload['html'] = html_body
+
+    try:
+        response = requests.post(
+            'https://api.resend.com/emails',
+            headers={
+                'authorization': f'Bearer {RESEND_API_KEY}',
+                'content-type': 'application/json',
+            },
+            json=payload,
+            timeout=12,
+        )
+        response.raise_for_status()
+        logger.info('Email delivered through Resend | recipient=%s', recipient_ref)
+        return True
+    except requests.RequestException as exc:
+        status = getattr(exc.response, 'status_code', 'unavailable')
+        logger.warning(
+            'Resend delivery failed | recipient=%s | status=%s',
+            recipient_ref,
+            status,
+        )
+        return False
 
 
 def _send_with_brevo(
@@ -124,6 +171,8 @@ def _send_email(
     body: str,
     html_body: str | None = None,
 ) -> bool:
+    if _send_with_resend(to_addr, subject, body, html_body):
+        return True
     if _send_with_brevo(to_addr, subject, body, html_body):
         return True
     if _send_with_smtp(to_addr, subject, body, html_body):

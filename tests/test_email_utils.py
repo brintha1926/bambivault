@@ -12,6 +12,55 @@ class _SuccessfulResponse:
         return None
 
 
+def test_resend_delivery_uses_https_api(monkeypatch):
+    captured = {}
+
+    def fake_post(url, *, headers, json, timeout):
+        captured.update({
+            'url': url,
+            'headers': headers,
+            'json': json,
+            'timeout': timeout,
+        })
+        return _SuccessfulResponse()
+
+    monkeypatch.setattr(email_utils, 'RESEND_API_KEY', 're_test_key')
+    monkeypatch.setattr(email_utils, 'EMAIL_FROM', 'security@notify.example.com')
+    monkeypatch.setattr(email_utils, 'EMAIL_FROM_NAME', 'BambiVault Security')
+    monkeypatch.setattr(email_utils.requests, 'post', fake_post)
+
+    assert email_utils._send_with_resend(
+        'member@example.com',
+        'Verify account',
+        'Verification message',
+        '<p>Verification message</p>',
+    ) is True
+    assert captured['url'] == 'https://api.resend.com/emails'
+    assert captured['headers']['authorization'] == 'Bearer re_test_key'
+    assert captured['json']['from'] == (
+        'BambiVault Security <security@notify.example.com>'
+    )
+    assert captured['json']['to'] == ['member@example.com']
+    assert captured['json']['text'] == 'Verification message'
+    assert captured['json']['html'] == '<p>Verification message</p>'
+    assert captured['timeout'] == 12
+
+
+def test_resend_failure_returns_false(monkeypatch):
+    def failed_post(*args, **kwargs):
+        raise requests.ConnectionError('provider unavailable')
+
+    monkeypatch.setattr(email_utils, 'RESEND_API_KEY', 're_test_key')
+    monkeypatch.setattr(email_utils, 'EMAIL_FROM', 'security@example.com')
+    monkeypatch.setattr(email_utils.requests, 'post', failed_post)
+
+    assert email_utils._send_with_resend(
+        'member@example.com',
+        'Verify account',
+        'Verification message',
+    ) is False
+
+
 def test_brevo_delivery_uses_https_api(monkeypatch):
     captured = {}
 
@@ -132,6 +181,28 @@ def test_email_prefers_brevo_before_smtp(monkeypatch):
 
     assert email_utils._send_email('member@example.com', 'Subject', 'Body') is True
     assert calls == ['brevo']
+
+
+def test_email_prefers_resend_before_legacy_providers(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        email_utils,
+        '_send_with_resend',
+        lambda *args: calls.append('resend') or True,
+    )
+    monkeypatch.setattr(
+        email_utils,
+        '_send_with_brevo',
+        lambda *args: calls.append('brevo') or True,
+    )
+    monkeypatch.setattr(
+        email_utils,
+        '_send_with_smtp',
+        lambda *args: calls.append('smtp') or True,
+    )
+
+    assert email_utils._send_email('member@example.com', 'Subject', 'Body') is True
+    assert calls == ['resend']
 
 
 def test_email_falls_back_to_smtp(monkeypatch):

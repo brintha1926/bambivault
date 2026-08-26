@@ -1,88 +1,104 @@
 # BambiVault
 
-BambiVault is a password-security assessment and encrypted credential-management platform. It combines machine-learning classification, behavioural pattern detection, privacy-preserving breach intelligence, personalised guidance, account security controls, and anonymised administrative reporting.
+[BambiVault](https://bambivault.com) is a password-security assessment and encrypted credential-management platform. It combines experimental machine-learning classification with explicit behavioural-pattern detection, privacy-preserving breach intelligence, personalised guidance, account security controls, and anonymised administrative reporting.
 
-## Core capabilities
+Production health: [`https://bambivault.com/healthz`](https://bambivault.com/healthz)
 
-- Experimental five-tier classification using a Random Forest model trained on derived structural labels; results are supplemented by explicit pattern and breach evidence
+## Capabilities
+
+- Five-tier experimental password classification using a Random Forest model trained on derived structural labels
 - Detection of keyboard walks, name-and-year patterns, substitutions, and dictionary words
-- Have I Been Pwned range queries using a five-character SHA-1 prefix
-- Personalised stronger-password variants generated without sending plaintext passwords to an AI service
-- Encrypted credential vault protected by a master password and Account Key
-- Email verification, password recovery, session management, and TOTP authentication
+- Have I Been Pwned range queries using only the first five characters of a SHA-1 hash
+- Stronger-password variants derived from the submitted structure without sending plaintext passwords to an AI service
+- Encrypted credential vault protected by a master password and separate Account Key
+- Email verification, password recovery, tracked sessions, recovery codes, and TOTP authentication
 - Aggregated administrative analytics with CSV, PDF, DOCX, and text exports
+- Responsive public, account, vault, dashboard, and administrator interfaces
 
-### API reference
+## Analysis boundaries
+
+The classifier is an experimental indicator rather than a guarantee of password security. Its output is presented alongside observable pattern evidence, breach exposure, length, character composition, and estimated resistance. The displayed entropy-related value is a model feature and is not presented as the password's complete information-theoretic entropy.
+
+Submitted plaintext passwords are processed for the current analysis and are not written to analysis history. Breach lookups use the Have I Been Pwned k-anonymity range protocol: the full password and full hash are not transmitted to the provider.
+
+## Production architecture
+
+| Layer | Production implementation |
+|---|---|
+| Domain and TLS | `bambivault.com`, Nginx, Let's Encrypt |
+| Compute | IPServerOne NovaCloud, Ubuntu 24.04 LTS |
+| Application server | Gunicorn managed by systemd |
+| Backend | Python 3, Flask, Flask-SQLAlchemy |
+| Database | Neon PostgreSQL with Alembic migrations |
+| Machine learning | scikit-learn Random Forest loaded with joblib |
+| Transactional email | Resend HTTPS API |
+| Breach intelligence | Have I Been Pwned Pwned Passwords API |
+| Frontend | Server-rendered Jinja, compiled Tailwind CSS, JavaScript, Alpine.js CSP build |
+| Testing | pytest and mypy |
+
+Nginx terminates HTTPS and forwards requests to Gunicorn on `127.0.0.1:8000`. Gunicorn is not exposed directly to the public network. PostgreSQL remains externally managed by Neon; no database port is opened on the application server.
+
+## Security controls
+
+- Secure, HTTP-only, SameSite session cookies in production
+- CSRF protection for state-changing browser requests
+- Database-backed throttling for authentication and analysis endpoints
+- Revocable tracked user sessions
+- Case-normalised username identity and bounded input validation
+- TOTP secrets encrypted at rest, replay protection, and hashed recovery codes
+- Password resets revoke active user sessions
+- Global request-body size limit
+- Sensitive responses marked to prevent browser caching
+- Strict Content Security Policy with per-request script nonces
+- Vault keys derived from the master password and Account Key using PBKDF2-HMAC-SHA256
+- Authenticated Fernet encryption for stored vault fields
+- Password-protected PDF and AES-encrypted ZIP account exports
+- Aggregated administrator reporting without submitted plaintext passwords
+
+## Public and protected routes
 
 | Method | Route | Access | Purpose |
 |---|---|---|---|
-| `POST` | `/analyse` | Public, rate-limited | Evaluate password strength, patterns, and breach exposure |
-| `GET` | `/api/stats` | Authenticated user | Retrieve personal analysis statistics |
-| `GET`, `POST` | `/api/vault/entries` | Authenticated user with an unlocked vault | List metadata or create an encrypted vault entry |
-| `GET` | `/api/admin/stats` | Administrator | Retrieve aggregated institutional statistics |
+| `GET` | `/` | Public | Product and methodology overview |
+| `GET` | `/analyser` | Public | Password-analysis interface |
+| `POST` | `/analyse` | Public, rate-limited | Evaluate structure, patterns, and breach exposure |
+| `GET` | `/api/stats` | Authenticated user | Personal analysis statistics |
+| `GET`, `POST` | `/api/vault/entries` | Authenticated user, unlocked vault | List metadata or create an encrypted vault entry |
+| `GET` | `/api/admin/stats` | Authenticated administrator | Aggregated security statistics |
+| `GET` | `/healthz` | Public | Application and database readiness |
+| `GET` | `/robots.txt` | Public | Search-crawler directives |
+| `GET` | `/sitemap.xml` | Public | Canonical public-page sitemap |
 
-## Technology
-
-| Layer | Technology |
-|---|---|
-| Backend | Python, Flask, Flask-SQLAlchemy |
-| Database | SQLite for development; PostgreSQL/Neon for production |
-| Machine learning | scikit-learn, Random Forest, joblib |
-| Frontend | Jinja, HTML, CSS, JavaScript, Alpine.js |
-| Breach intelligence | Have I Been Pwned Pwned Passwords API |
-| Database migrations | Alembic, Flask-Migrate |
-| Testing and typing | pytest, mypy |
-
-## Security boundaries
-
-- Submitted passwords are not stored in plaintext.
-- Breach queries transmit only a five-character SHA-1 prefix.
-- Analysis history contains derived attributes rather than submitted passwords.
-- Vault fields are encrypted before database storage.
-- Vault decryption requires the master password and Account Key.
-- Recovery codes are stored as password hashes.
-- Authentication and analysis throttling uses shared database counters.
-- Administrative reporting contains aggregated, anonymised statistics.
+Account, vault, dashboard, history, settings, and administrator templates default to `noindex, nofollow`. Only the landing page and public analyser are included in the sitemap.
 
 ## Local development
+
+Requirements:
+
+- Python 3.12 or later
+- Node.js only when rebuilding the compiled Tailwind stylesheet
 
 ```powershell
 git clone https://github.com/brintha1926/bambivault.git
 cd bambivault
 python -m venv venv
 .\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-python app.py
 ```
 
-The application is available at `http://127.0.0.1:5000`.
-
-## Configuration
-
-Create `.env` in the repository root. Do not commit this file.
+Create `.env` in the repository root. Never commit this file.
 
 ```dotenv
 SECRET_KEY="replace-with-a-random-secret"
 ADMIN_PASSWORD="replace-with-a-strong-administrator-password"
+ADMIN_EMAIL="administrator@example.com"
 DATABASE_URL="sqlite:///password_logs.db"
 FLASK_ENV="development"
 FLASK_DEBUG="True"
 APP_BASE_URL="http://127.0.0.1:5000"
+TRUSTED_PROXY_HOPS="0"
 ```
-
-For verification and password-reset email on hosting platforms that restrict SMTP,
-configure Brevo's HTTPS transactional email API:
-
-```dotenv
-BREVO_API_KEY="replace-with-a-Brevo-API-key"
-EMAIL_FROM="verified-sender@example.com"
-EMAIL_FROM_NAME="BambiVault"
-```
-
-`EMAIL_FROM` must be a sender verified in Brevo. The application prefers Brevo
-when `BREVO_API_KEY` is present. `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
-`SMTP_PASS`, and `SMTP_FROM` remain supported as an optional fallback.
-`GROQ_API_KEY` enables the optional AI recommendation integration.
 
 Generate a Flask session secret with:
 
@@ -90,28 +106,42 @@ Generate a Flask session secret with:
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-## Model assets
-
-The compressed trained model is included for reproducible deployment. Source datasets remain excluded from Git. To rebuild the model:
+Start the development server:
 
 ```powershell
-python clean_data.py
-python generate_training_data_v3.py
-python train_model_v3.py
+python app.py
 ```
 
-The resulting model must be saved at `model/strength_model_rf_v3.pkl`. Use Joblib compression when preparing it for source control.
+Open `http://127.0.0.1:5000`.
 
-## PostgreSQL migration
+## Optional integrations
 
-Set the direct PostgreSQL connection string and initialise the schema:
+Use Resend's HTTPS transactional API where direct SMTP is restricted:
+
+```dotenv
+RESEND_API_KEY="replace-with-a-Resend-API-key"
+EMAIL_FROM="verified-sender@example.com"
+EMAIL_FROM_NAME="BambiVault"
+```
+
+`EMAIL_FROM` must use a domain verified by Resend. Brevo and SMTP variables remain supported as migration fallbacks. `GROQ_API_KEY` enables the optional AI recommendation integration; password data is not sent to that integration.
+
+## Database preparation and migration
+
+Initialise or upgrade the configured database schema:
+
+```powershell
+python -m flask --app app bootstrap
+```
+
+For PostgreSQL, use a TLS-enabled connection string:
 
 ```powershell
 $env:DATABASE_URL="postgresql+psycopg://USER:PASSWORD@HOST/DATABASE?sslmode=require"
 python -m flask --app app bootstrap
 ```
 
-To transfer existing SQLite data:
+To migrate existing SQLite records to an empty PostgreSQL schema:
 
 ```powershell
 $env:POSTGRES_DATABASE_URL=$env:DATABASE_URL
@@ -119,9 +149,32 @@ python migrate_sqlite_to_postgres.py --source instance/password_logs.db --dry-ru
 python migrate_sqlite_to_postgres.py --source instance/password_logs.db
 ```
 
-The transfer validates row counts, checks vault ownership, and updates PostgreSQL identity sequences. Vault ciphertext is copied without decryption.
+The migration validates row counts and vault ownership, preserves encrypted vault ciphertext, and updates PostgreSQL identity sequences.
 
-## Testing
+## Model assets
+
+The compressed trained model is versioned at `model/strength_model_rf_v3.pkl`. Source datasets and generated training files are intentionally excluded from Git.
+
+To rebuild the model:
+
+```powershell
+python clean_data.py
+python generate_training_data_v3.py
+python train_model_v3.py
+```
+
+## Frontend assets
+
+Production uses the compiled stylesheet at `static/tailwind.css`; it does not load the Tailwind browser CDN. After changing utility classes in templates:
+
+```powershell
+npm install
+npm run build:css
+```
+
+## Verification
+
+Install development dependencies and run the automated checks:
 
 ```powershell
 python -m pip install -r requirements.txt -r requirements-dev.txt
@@ -129,49 +182,53 @@ python -m pytest -v
 python -m mypy feature_extraction.py strengthen.py config.py security_utils.py migrate_sqlite_to_postgres.py
 ```
 
-The automated suite covers analysis responses, breach fallbacks, caching, behavioural classification, authentication boundaries, PostgreSQL transfer validation, Unicode input, stronger-password variants, vault cryptography, and secure exports.
+The suite covers analysis contracts, breach-cache isolation, behavioural classification, authentication boundaries, session revocation, email delivery, PostgreSQL transfer validation, stronger-password variants, vault cryptography, protected exports, and SEO boundaries.
 
-## Production deployment
+## Production operations
 
-Set `TRUSTED_PROXY_HOPS=1` when the application runs behind one trusted reverse proxy, such as Render or a single Nginx proxy. Leave it at `0` when the application is directly exposed. `MAX_CONTENT_LENGTH` defaults to 1 MB.
+The active deployment uses `/opt/bambivault`, a virtual environment at `/opt/bambivault/.venv`, and the `bambivault.service` systemd unit. Production secrets are stored in `/opt/bambivault/.env` with restricted permissions.
 
-Frontend utility classes are compiled into `static/tailwind.css`. After changing utility classes in templates, run `npm install` once and then `npm run build:css`; production does not load the Tailwind browser CDN.
-
-Set `FLASK_ENV=production` and configure secrets through the hosting provider. Run database preparation once as the release or pre-deploy command:
+Deploy a merged update from `main`:
 
 ```bash
-flask --app app bootstrap
+cd /opt/bambivault
+git pull --ff-only origin main
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m flask --app app bootstrap
+sudo systemctl restart bambivault
+sudo systemctl status bambivault --no-pager
+curl https://bambivault.com/healthz
 ```
 
-The Docker image starts Gunicorn automatically and uses the platform-provided `PORT`. For a native Python deployment, start the workers with:
+Follow application logs:
 
 ```bash
-gunicorn --bind 0.0.0.0:${PORT:-5000} --workers ${WEB_CONCURRENCY:-1} --threads ${GUNICORN_THREADS:-4} --timeout 60 app:app
+sudo journalctl -u bambivault -f
 ```
 
-The single-worker default prevents the in-memory model from being duplicated on smaller instances. Increase `WEB_CONCURRENCY` only when the deployment has sufficient memory. Database migrations must not run independently inside each worker.
+The repository retains a Dockerfile as an alternative packaging option, but the active NovaCloud deployment runs directly under systemd and Gunicorn.
 
 ## Repository structure
 
 ```text
-app.py                         Flask application and API routes
+app.py                         Flask application and primary HTTP routes
 vault_routes.py                Account, session, export, and vault endpoints
 models.py                      SQLAlchemy models
-feature_extraction.py          Password feature extraction
-ml_classifier.py               Strength classification
-strengthen.py                  Stronger-password generation
-breach.py                      Breach intelligence and risk scoring
-security_utils.py              Validation and shared throttling
+config.py                      Validated environment configuration
+feature_extraction.py          Structural and behavioural feature extraction
+ml_classifier.py               Experimental strength classification
+strengthen.py                  Personalised stronger-password generation
+breach.py                      Breach intelligence, cache, and risk scoring
+security_utils.py              Validation, TOTP, and shared throttling
+email_utils.py                 Verification and recovery email delivery
 migrations/                    Alembic database revisions
+model/                         Versioned compressed classifier
 templates/                     Active Jinja templates
-static/                        Styles and image assets
+static/                        Compiled styles, scripts, and image assets
 tests/                         Automated test suite
 ```
 
-## Interface preview
+## Maintainer
 
-The landing-page product preview is maintained at `static/img/landing-product.svg`. Production screenshots should be captured from the deployed build without local accounts or test records.
-
-## Project provenance
-
-BambiVault was developed by Brintha  Subramoney
+Developed and maintained by [Brintha Subramoney](https://www.linkedin.com/in/brintha-subra/) as a final-year Bachelor of Information Technology (Honours), Communications and Networking project at Universiti Tunku Abdul Rahman.

@@ -129,6 +129,10 @@ p { margin: 0; }
 .alert-success { background: var(--success-soft); color: var(--success);      border-color: #A7F3D0; }
 .alert-warning { background: var(--warn-soft);    color: var(--warn);         border-color: #FDE68A; }
 .alert-danger  { background: var(--danger-soft);  color: var(--danger);       border-color: #FECACA; }
+.auth-success-state { text-align: center; padding: .5rem 0 0; }
+.auth-success-state h2 { margin: .9rem 0 .35rem; font-size: 1.3rem; font-weight: 700; color: var(--text-primary); }
+.auth-success-state p { margin: 0 0 1.25rem; color: var(--text-secondary); font-size: .9rem; }
+.auth-success-icon { display: inline-flex; align-items: center; justify-content: center; width: 3rem; height: 3rem; border-radius: 999px; background: var(--success-soft); color: var(--success); }
 
 /* Input validation */
 
@@ -999,7 +1003,7 @@ body { background-color: #F8FAFC; }
 .recovery-codes span { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); padding: .5rem .65rem; text-align: center; }
 
 .twofa-qr-wrap { text-align: center; padding: 1.25rem; background: var(--surface-2); border-radius: var(--r); margin: 1rem 0; }
-.twofa-qr-wrap img { max-width: 180px; margin: 0 auto; border-radius: var(--r); background: #fff; padding: .5rem; }
+.twofa-qr-wrap img { display: block; width: 180px; max-width: 100%; height: auto; margin: 0 auto; border-radius: var(--r); background: #fff; padding: .5rem; }
 
 /* Sessions */
 

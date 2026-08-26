@@ -1,4 +1,6 @@
 import pytest
+import pyotp
+from types import SimpleNamespace
 from werkzeug.security import generate_password_hash
 
 
@@ -61,3 +63,58 @@ def test_recovery_code_hashes_are_fast_and_backward_compatible(app_module):
 
         legacy = generate_password_hash('A1B2C3D4')
         assert verify_recovery_code(legacy, 'a1b2c3d4')
+
+
+def test_totp_verification_uses_timezone_independent_unix_time(
+    client, monkeypatch
+):
+    import security_utils
+    from security_utils import verify_totp_once
+
+    fixed_time = 1_800_000_000
+    secret = pyotp.random_base32()
+    token = pyotp.TOTP(secret).at(fixed_time)
+    monkeypatch.setattr(security_utils, 'unix_time', lambda: fixed_time)
+    monkeypatch.setattr(security_utils, 'decrypt_totp_secret', lambda _: secret)
+    monkeypatch.setattr(
+        security_utils, 'encrypt_totp_secret', lambda value: f'encrypted:{value}'
+    )
+
+    otp = SimpleNamespace(secret='encrypted-secret', last_used_step=None)
+    assert verify_totp_once(otp, token, valid_window=1)
+    assert not verify_totp_once(otp, token, valid_window=1)
+
+
+def test_user_twofa_setup_returns_loadable_same_origin_qr(client, app_module):
+    from models import db, User, UserSession
+
+    with app_module.app.app_context():
+        user = User(
+            email='qr-setup@example.test',
+            username='qr_setup_user',
+            password_hash=generate_password_hash('AccountPassword!42'),
+            email_verified=True,
+        )
+        db.session.add(user)
+        db.session.commit()
+        user_id = user.id
+        login_token = 'qr-setup-session'
+        db.session.add(UserSession(user_id=user_id, session_token=login_token))
+        db.session.commit()
+
+    with client.session_transaction() as session:
+        session['user_id'] = user_id
+        session['login_session_id'] = login_token
+
+    setup = client.post(
+        '/api/account/2fa/setup',
+        json={'password': 'AccountPassword!42'},
+    )
+    assert setup.status_code == 200
+    qr_url = setup.get_json()['qr_url']
+    assert qr_url.startswith('/api/account/2fa/qr?')
+
+    qr = client.get(qr_url)
+    assert qr.status_code == 200
+    assert qr.mimetype == 'image/png'
+    assert qr.data.startswith(b'\x89PNG\r\n\x1a\n')

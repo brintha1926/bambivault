@@ -174,4 +174,4 @@ The landing-page product preview is maintained at `static/img/landing-product.sv
 
 ## Project provenance
 
-BambiVault was developed by Brintha  Subramoney as a Bachelor of Information Technology (Honours), Communications and Networking 
+BambiVault was developed by Brintha  Subramoney

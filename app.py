@@ -104,7 +104,10 @@ def create_csp_nonce():
 
 @app.context_processor
 def inject_csp_nonce():
-    return {'csp_nonce': getattr(g, 'csp_nonce', '')}
+    return {
+        'csp_nonce': getattr(g, 'csp_nonce', ''),
+        'seo_base_url': config.APP_BASE_URL.rstrip('/'),
+    }
 
 
 @app.errorhandler(413)
@@ -375,6 +378,33 @@ def build_recommendations(feats: dict, score: int, breach_result: dict, profile:
 
 
 # PUBLIC PAGE ROUTES
+
+@app.route('/robots.txt')
+def robots_txt():
+    """Publish crawler rules and advertise the canonical sitemap."""
+    content = f"""User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /logout
+Disallow: /admin/logout
+Disallow: /exit-guest
+
+Sitemap: {config.APP_BASE_URL.rstrip('/')}/sitemap.xml
+"""
+    return Response(content, mimetype='text/plain')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    """List the public canonical pages intended for search indexing."""
+    base_url = config.APP_BASE_URL.rstrip('/')
+    content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>{base_url}/</loc></url>
+  <url><loc>{base_url}/analyser</loc></url>
+</urlset>
+"""
+    return Response(content, mimetype='application/xml')
 
 @app.route('/')
 def index():

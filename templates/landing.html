@@ -1,5 +1,20 @@
 {% extends "public_base.html" %}
 {% block title %}BambiVault | Password Security Intelligence{% endblock %}
+{% block meta_description %}Assess password structure, predictable behavioural patterns, and known breach exposure with BambiVault's privacy-conscious security analysis.{% endblock %}
+{% block seo_robots %}index, follow, max-image-preview:large{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ seo_base_url }}/">{% endblock %}
+{% block social_meta %}
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BambiVault">
+<meta property="og:title" content="BambiVault | Password Security Intelligence">
+<meta property="og:description" content="Assess password structure, predictable behavioural patterns, and known breach exposure with privacy-conscious security analysis.">
+<meta property="og:url" content="{{ seo_base_url }}/">
+<meta property="og:image" content="{{ seo_base_url }}{{ url_for('static', filename='img/landing-product.svg') }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BambiVault | Password Security Intelligence">
+<meta name="twitter:description" content="Assess password structure, predictable behavioural patterns, and known breach exposure.">
+<meta name="twitter:image" content="{{ seo_base_url }}{{ url_for('static', filename='img/landing-product.svg') }}">
+{% endblock %}
 
 {% block public_nav_links %}
   <a href="#features" class="nav-text-mobile-hide">Features</a>

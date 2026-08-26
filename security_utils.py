@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import re
 import base64
+from time import time as unix_time
 from datetime import datetime, timedelta
 from flask import current_app
 from sqlalchemy.exc import IntegrityError
@@ -60,7 +61,10 @@ def verify_totp_once(otp_row, candidate: str, valid_window: int = 1) -> bool:
     if not secret:
         return False
     totp = __import__('pyotp').TOTP(secret)
-    now_step = int(datetime.utcnow().timestamp()) // totp.interval
+    # Unix time is timezone-independent. Converting a naive utcnow() through
+    # timestamp() interprets it as local time and shifts TOTP windows on hosts
+    # configured outside UTC.
+    now_step = int(unix_time()) // totp.interval
     for offset in range(-valid_window, valid_window + 1):
         step = now_step + offset
         if totp.verify(candidate, for_time=step * totp.interval, valid_window=0):

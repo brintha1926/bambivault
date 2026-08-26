@@ -352,7 +352,11 @@ async function start2FASetup(){
     var d = await r.json();
     if(d.error){ if (window.bvToast) window.bvToast({ kind: 'danger', message: d.error }); else alert(d.error); return; }
     document.getElementById('setup2FAPassword').value = '';
-    document.getElementById('twofaQR').src = d.qr_data;
+    var qr = document.getElementById('twofaQR');
+    var setupError = document.getElementById('twofaSetupErr');
+    setupError.textContent = '';
+    qr.onerror = function(){ setupError.textContent = 'The QR code could not be loaded. Use the manual key below.'; };
+    qr.src = d.qr_url;
     document.getElementById('twofaSecret').textContent = d.secret;
     document.getElementById('twofaOff').classList.add('hidden');
     document.getElementById('twofaSetupBox').classList.remove('hidden');

@@ -1,7 +1,6 @@
 """BambiVault Flask application and HTTP endpoints."""
 
 import csv
-import base64
 import io
 import json
 import os
@@ -35,6 +34,7 @@ from security_utils import (
     consume_rate_limit,
     hash_recovery_code,
     encrypt_totp_secret,
+    decrypt_totp_secret,
     verify_totp_once,
     verify_recovery_code,
 )
@@ -652,11 +652,30 @@ def admin_2fa_setup():
         otp = AdminOTP(admin_id=1, secret=encrypt_totp_secret(secret), enabled=False)
         db.session.add(otp)
     db.session.commit()
-    uri = pyotp.TOTP(secret).provisioning_uri(name=admin_account.email or 'Administrator', issuer_name='BambiVault Admin')
-    image = qrcode.make(uri)
+    return jsonify({
+        'secret': secret,
+        'qr_url': url_for('admin_2fa_qr', v=secrets.token_urlsafe(8)),
+    })
+
+
+@app.route('/api/admin/2fa/qr')
+@admin_required
+def admin_2fa_qr():
+    """Return the pending administrator authenticator QR as a PNG."""
+    admin_account = db.session.get(AdminAccount, 1)
+    otp = db.session.get(AdminOTP, 1)
+    secret = decrypt_totp_secret(otp.secret) if otp and not otp.enabled else ''
+    if not secret:
+        return jsonify({'error': 'Two-factor authentication setup was not started.'}), 404
+
+    uri = pyotp.TOTP(secret).provisioning_uri(
+        name=admin_account.email or 'Administrator',
+        issuer_name='BambiVault Admin',
+    )
     buf = io.BytesIO()
-    image.save(buf, format='PNG')
-    return jsonify({'secret': secret, 'qr_data': 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode()})
+    qrcode.make(uri).save(buf, format='PNG')
+    buf.seek(0)
+    return send_file(buf, mimetype='image/png', max_age=0)
 
 
 @app.route('/api/admin/2fa/verify', methods=['POST'])

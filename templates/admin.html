@@ -270,7 +270,10 @@ function renderRiskTrend(rows){
   riskTrendChart = new Chart(canvas, {
     type: 'line',
     data: {
-      labels: rows.map(function(row){ return row.day; }),
+      labels: rows.map(function(row){
+        var date = new Date(row.day + 'T00:00:00');
+        return date.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' });
+      }),
       datasets: [{
         label: 'Breach exposure rate',
         data: rows.map(function(row){ return row.total ? Math.round(row.breached / row.total * 1000) / 10 : 0; }),
@@ -285,10 +288,17 @@ function renderRiskTrend(rows){
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(items){ return items.length ? rows[items[0].dataIndex].day : ''; }
+          }
+        }
+      },
       scales: {
         y: { beginAtZero: true, max: 100, ticks: { callback: function(value){ return value + '%'; } } },
-        x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } }
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 6, maxRotation: 0, autoSkip: true } }
       }
     }
   });

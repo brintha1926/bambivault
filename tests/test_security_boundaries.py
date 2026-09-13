@@ -34,6 +34,19 @@ def test_admin_login_is_rate_limited(client, app_module):
     assert response.status_code == 429
 
 
+def test_registration_limit_allows_uat_on_shared_network(client):
+    for _ in range(15):
+        response = client.post('/api/account/register', json={})
+        assert response.status_code == 400
+
+    response = client.post('/api/account/register', json={})
+    assert response.status_code == 429
+    assert response.get_json()['error'] == (
+        'Registration is temporarily unavailable for this network. '
+        'Please try again in 15 minutes.'
+    )
+
+
 def test_analysis_result_rejects_mismatched_label(app_module):
     with pytest.raises(ValueError):
         app_module.validate_analysis_result(

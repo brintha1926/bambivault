@@ -84,6 +84,8 @@ RESET_RATE_MAX    = 3     # requests
 RESET_RATE_WINDOW = 300   # 5 minutes
 TWOFA_RATE_MAX    = 8
 TWOFA_RATE_WINDOW = 60
+REGISTER_RATE_MAX = 15
+REGISTER_RATE_WINDOW = 15 * 60
 
 
 # ACCOUNT — register / login / logout / status
@@ -91,8 +93,15 @@ TWOFA_RATE_WINDOW = 60
 @vault_bp.route('/api/account/register', methods=['POST'])
 def register():
     ip, _ = _client_info()
-    if consume_rate_limit('user-register', ip, 5, 3600):
-        return jsonify({'error': 'Too many registration attempts. Try again later.'}), 429
+    if consume_rate_limit(
+        'user-register', ip, REGISTER_RATE_MAX, REGISTER_RATE_WINDOW
+    ):
+        return jsonify({
+            'error': (
+                'Registration is temporarily unavailable for this network. '
+                'Please try again in 15 minutes.'
+            )
+        }), 429
     data     = request.get_json(silent=True) or {}
     email    = data.get('email', '').strip().lower()
     username = normalise_username(data.get('username', ''))

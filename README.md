@@ -1,12 +1,37 @@
 # BambiVault
 
-[BambiVault](https://bambivault.com) is a password-security assessment and encrypted credential-management platform. It combines experimental machine-learning classification with explicit behavioural-pattern detection, privacy-preserving breach intelligence, personalised guidance, account security controls, and anonymised administrative reporting.
+**A production password-analysis and encrypted credential-management platform.**
 
-Production health: [`https://bambivault.com/healthz`](https://bambivault.com/healthz)
+[![Live application](https://img.shields.io/badge/live-bambivault.com-ef73ff?style=flat-square)](https://bambivault.com)
+[![Python](https://img.shields.io/badge/Python-3.12+-ffb5d6?style=flat-square&logo=python&logoColor=1f1528)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.1-ef73ff?style=flat-square&logo=flask)](https://flask.palletsprojects.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-ffb5d6?style=flat-square&logo=postgresql&logoColor=1f1528)](https://www.postgresql.org/)
+
+[BambiVault](https://bambivault.com) combines structural password analysis, experimental machine-learning classification, privacy-preserving breach intelligence and an encrypted personal vault. It was built as a full-stack Information Technology honours project and is now deployed as a working production system.
+
+> **Current status:** live and maintained. Application readiness is exposed at [`/healthz`](https://bambivault.com/healthz).
+
+## What the system does
+
+```text
+Password input
+    ├── structural feature extraction
+    ├── behavioural-pattern detection
+    ├── experimental Random Forest classification
+    └── HIBP k-anonymity breach lookup
+             ↓
+Evidence-based result + safer-password guidance
+
+Authenticated users
+    ├── private analysis history and dashboard
+    ├── TOTP two-factor authentication and recovery codes
+    ├── revocable login sessions
+    └── encrypted credential vault with automatic locking
+```
 
 ## Capabilities
 
-- Five-tier experimental password classification using a Random Forest model trained on derived structural labels
+- Ten-feature password-analysis pipeline with five-tier experimental classification using a Random Forest model trained on 14.3 million real-world passwords and derived structural labels
 - Detection of keyboard walks, name-and-year patterns, substitutions, and dictionary words
 - Have I Been Pwned range queries using only the first five characters of a SHA-1 hash
 - Stronger-password variants derived from the submitted structure without sending plaintext passwords to an AI service
@@ -21,7 +46,18 @@ The classifier is an experimental indicator rather than a guarantee of password 
 
 Submitted plaintext passwords are processed for the current analysis and are not written to analysis history. Breach lookups use the Have I Been Pwned k-anonymity range protocol: the full password and full hash are not transmitted to the provider.
 
-## Production architecture
+## Architecture
+
+```text
+Browser
+  └── Nginx / TLS
+        └── Gunicorn
+              └── Flask application
+                    ├── analysis engine → Random Forest + rules
+                    ├── breach service  → HIBP range API
+                    ├── email service   → Resend HTTPS API
+                    └── persistence     → Neon PostgreSQL
+```
 
 | Layer | Production implementation |
 |---|---|
@@ -64,6 +100,11 @@ Nginx terminates HTTPS and forwards requests to Gunicorn on `127.0.0.1:8000`. Gu
 | `POST` | `/analyse` | Public, rate-limited | Evaluate structure, patterns, and breach exposure |
 | `GET` | `/api/stats` | Authenticated user | Personal analysis statistics |
 | `GET`, `POST` | `/api/vault/entries` | Authenticated user, unlocked vault | List metadata or create an encrypted vault entry |
+| `GET` | `/api/vault/health` | Authenticated user, unlocked vault | Assess weak, breached, or reused vault credentials |
+| `GET` | `/api/account/sessions` | Authenticated user | Inspect tracked login sessions |
+| `POST` | `/api/account/sessions/revoke` | Authenticated user | Revoke a tracked login session |
+| `POST` | `/api/account/2fa/setup` | Authenticated user | Begin TOTP enrolment |
+| `POST` | `/api/account/export-secure` | Authenticated user | Create a protected PDF or encrypted ZIP export |
 | `GET` | `/api/admin/stats` | Authenticated administrator | Aggregated security statistics |
 | `GET` | `/healthz` | Public | Application and database readiness |
 | `GET` | `/robots.txt` | Public | Search-crawler directives |
@@ -229,6 +270,8 @@ static/                        Compiled styles, scripts, and image assets
 tests/                         Automated test suite
 ```
 
-## Maintainer
+## Project context and maintainer
 
-Developed and maintained by [Brintha Subramoney](https://www.linkedin.com/in/brintha-subra/) as a final-year Bachelor of Information Technology (Honours), Communications and Networking project at Universiti Tunku Abdul Rahman.
+BambiVault was designed, engineered and deployed by [Brintha Subramoney](https://www.linkedin.com/in/brintha-subra/) as a Bachelor of Information Technology (Honours), Communication & Networking project at Universiti Tunku Abdul Rahman.
+
+Brintha has completed her studies and is currently open to graduate opportunities across Python development, automation, cybersecurity and cloud/infrastructure engineering.
